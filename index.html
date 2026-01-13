@@ -4,34 +4,39 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <link rel="manifest" href="manifest.json">
-    <title>Scanner PL Pro</title>
+    <title>Scanner PL Pro v3</title>
     <script src="html5-qrcode.min.js"></script>
     <style>
-        :root { --primary: #007bff; --success: #28a745; --error: #dc3545; --dark: #2c3e50; --light: #f4f7f6; }
+        :root { --primary: #007bff; --success: #28a745; --error: #dc3545; --warning: #fd7e14; --dark: #2c3e50; --light: #f4f7f6; }
         body { font-family: sans-serif; background: var(--light); margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         
-        #scanner-container { width: 100%; background: #000; height: 35vh; position: relative; border-bottom: 3px solid var(--primary); }
+        /* Ajuste de la franja de video para que no tape la lista */
+        #scanner-container { width: 100%; background: #000; height: 25vh; position: relative; border-bottom: 2px solid var(--primary); flex-shrink: 0; }
         #reader { width: 100% !important; height: 100% !important; }
         
-        .controls { padding: 15px; background: white; text-align: center; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); z-index: 10; }
-        .btn-scan { width: 75px; height: 75px; border-radius: 50%; border: 6px solid #eef2f7; background: var(--success); color: white; font-size: 1.8rem; cursor: pointer; }
-        .btn-scan:active { transform: scale(0.9); opacity: 0.8; }
+        .controls { padding: 10px; background: white; text-align: center; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); z-index: 10; flex-shrink: 0; }
+        .btn-scan { width: 65px; height: 65px; border-radius: 50%; border: 5px solid #eef2f7; background: var(--success); color: white; font-size: 1.5rem; cursor: pointer; margin-bottom: 5px; }
         
-        .list-container { flex: 1; overflow-y: auto; padding: 10px; }
+        .list-container { flex: 1; overflow-y: auto; padding: 10px; padding-bottom: 80px; }
         
         .card { 
-            background: white; padding: 12px; border-radius: 10px; margin-bottom: 8px; 
-            display: flex; align-items: center; justify-content: space-between; 
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-left: 5px solid var(--primary);
+            background: white; padding: 12px; border-radius: 10px; margin-bottom: 10px; 
+            display: flex; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-left: 5px solid var(--primary);
         }
-        /* Color especial para la tarjeta del Pedido */
-        .card-order { border-left-color: var(--dark); background: #e9ecef; }
+        .card-order { border-left-color: var(--dark); background: #f8f9fa; }
         
-        .card-info { flex: 1; }
-        .qty-badge { background: var(--primary); color: white; padding: 5px 12px; border-radius: 20px; font-weight: bold; margin: 0 10px; }
+        .card-info { flex: 1; min-width: 0; }
+        .lote-header { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+        .lote-text { font-weight: bold; font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         
-        .btn-icon { background: none; border: none; font-size: 1.2rem; cursor: pointer; padding: 5px; }
+        /* Badge llamativo para el Total de Cajas */
+        .box-badge { background: var(--warning); color: white; padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; }
+        
+        .qty-badge { background: var(--primary); color: white; padding: 6px 10px; border-radius: 20px; font-weight: bold; font-size: 0.9rem; margin-right: 8px; white-space: nowrap; }
+        
+        .btn-icon { background: none; border: none; font-size: 1.2rem; cursor: pointer; padding: 5px; opacity: 0.7; }
 
+        /* Modales */
         .panel { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 85%; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); z-index: 4000; display: none; text-align: center; }
         .panel input { width: 100%; padding: 12px; margin: 10px 0; font-size: 1.2rem; text-align: center; border: 2px solid #ddd; border-radius: 8px; box-sizing: border-box;}
         .btn-block { width: 100%; padding: 15px; margin-top: 10px; border: none; border-radius: 8px; font-weight: bold; color: white; }
@@ -44,10 +49,10 @@
     
     <div class="controls">
         <button class="btn-scan" id="btn-read" onclick="activarEscaneo()">📸</button>
-        <div style="margin-top: 12px; display: flex; justify-content: space-around; font-size: 0.8rem;">
-            <button onclick="exportarCSV()" style="background:none; border:none; color:var(--primary); font-weight:bold;">📥 EXPORTAR</button>
-            <button onclick="toggleTorch()" style="background:none; border:none; color:var(--dark);">⚡ LINTERNA</button>
-            <button onclick="borrarTodo()" style="background:none; border:none; color:var(--error);">🗑️ LIMPIAR</button>
+        <div style="display: flex; justify-content: space-around; font-size: 0.75rem; font-weight: bold; color: var(--dark);">
+            <div onclick="exportarCSV()">📥 EXPORTAR</div>
+            <div onclick="toggleTorch()">⚡ LINTERNA</div>
+            <div onclick="borrarTodo()" style="color: var(--error);">🗑️ LIMPIAR</div>
         </div>
     </div>
 
@@ -81,11 +86,10 @@
 
         async function iniciarApp() {
             scanner = new Html5Qrcode("reader");
-            await scanner.start({ facingMode: "environment" }, { fps: 20, qrbox: { width: 250, height: 150 } }, (text) => {
+            await scanner.start({ facingMode: "environment" }, { fps: 20, qrbox: { width: 220, height: 120 } }, (text) => {
                 if(leerAhora) {
                     leerAhora = false;
                     loteActual = text;
-                    document.getElementById('btn-read').style.background = "var(--success)";
                     abrirValidacion();
                 }
             });
@@ -103,15 +107,11 @@
 
         function guardarPedido() {
             let val = document.getElementById('in-pedido').value.trim();
-            if(val) { 
-                idPedido = val; 
-                localStorage.setItem('id_pedido_actual', idPedido); 
-                cerrarTodo();
-                dibujarLista();
-            }
+            if(val) { idPedido = val; localStorage.setItem('id_pedido_actual', idPedido); cerrarTodo(); dibujarLista(); }
         }
 
         function abrirValidacion() {
+            document.getElementById('btn-read').style.background = "var(--success)";
             document.getElementById('overlay').style.display = 'block';
             document.getElementById('panel-tipo').style.display = 'block';
             document.getElementById('lbl-lote-actual').innerText = "Lote: " + loteActual;
@@ -160,7 +160,6 @@
             const lista = document.getElementById('lista-escaneos');
             lista.innerHTML = "";
             
-            // Tarjeta de Pedido (Siempre primero)
             if(idPedido) {
                 lista.innerHTML += `
                     <div class="card card-order">
@@ -169,14 +168,19 @@
                     </div>`;
             }
 
-            // Lista de Lotes
             Object.keys(memoria).reverse().forEach(l => {
                 const m = memoria[l];
-                const total = (m.cajas * m.std) + m.parcial;
+                const totalU = (m.cajas * m.std) + m.parcial;
                 lista.innerHTML += `
                     <div class="card">
-                        <div class="card-info"><b>${l}</b><br><small>${m.cajas} cjs x ${m.std} + ${m.parcial} u.</small></div>
-                        <div class="qty-badge">${total} u.</div>
+                        <div class="card-info">
+                            <div class="lote-header">
+                                <span class="lote-text">${l}</span>
+                                <span class="box-badge">${m.cajas} CJ</span>
+                            </div>
+                            <small>${m.cajas} x ${m.std} + ${m.parcial} u.</small>
+                        </div>
+                        <div class="qty-badge">${totalU} u.</div>
                         <button class="btn-icon" onclick="eliminarLote('${l}')">🗑️</button>
                     </div>`;
             });
@@ -185,17 +189,10 @@
         function preguntarCambioPedido() {
             document.getElementById('overlay').style.display = 'block';
             document.getElementById('panel-pedido').style.display = 'block';
-            document.getElementById('in-pedido').value = idPedido;
         }
 
-        function eliminarLote(l) {
-            if(confirm("¿Eliminar lote " + l + "?")) { delete memoria[l]; guardarYRefrescar(); }
-        }
-
-        function borrarTodo() {
-            if(confirm("¿Limpiar lista?")) { memoria = {}; guardarYRefrescar(); }
-        }
-
+        function eliminarLote(l) { if(confirm("¿Eliminar lote " + l + "?")) { delete memoria[l]; guardarYRefrescar(); } }
+        function borrarTodo() { if(confirm("¿Limpiar lista?")) { memoria = {}; guardarYRefrescar(); } }
         function cerrarTodo() { 
             document.getElementById('overlay').style.display = 'none';
             document.getElementById('panel-tipo').style.display = 'none'; 
@@ -207,7 +204,7 @@
 
         function toggleTorch() {
             torchOn = !torchOn;
-            scanner.applyVideoConstraints({ advanced: [{ torch: torchOn }] }).catch(e => alert("No disponible"));
+            scanner.applyVideoConstraints({ advanced: [{ torch: torchOn }] }).catch(e => alert("Flash no disponible"));
         }
 
         function exportarCSV() {
