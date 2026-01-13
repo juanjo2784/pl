@@ -4,42 +4,84 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <link rel="manifest" href="manifest.json">
-    <title>Scanner PL Pro v3</title>
+    <title>Scanner PL Pro v4</title>
     <script src="html5-qrcode.min.js"></script>
     <style>
         :root { --primary: #007bff; --success: #28a745; --error: #dc3545; --warning: #fd7e14; --dark: #2c3e50; --light: #f4f7f6; }
+        
         body { font-family: sans-serif; background: var(--light); margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         
-        /* Ajuste de la franja de video para que no tape la lista */
-        #scanner-container { width: 100%; background: #000; height: 25vh; position: relative; border-bottom: 2px solid var(--primary); flex-shrink: 0; }
+        /* Contenedor de cámara con altura fija */
+        #scanner-container { 
+            width: 100%; 
+            background: #000; 
+            height: 25vh; 
+            position: relative; 
+            flex-shrink: 0; 
+            z-index: 1;
+        }
         #reader { width: 100% !important; height: 100% !important; }
         
-        .controls { padding: 10px; background: white; text-align: center; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); z-index: 10; flex-shrink: 0; }
+        /* Barra de controles con FONDO SÓLIDO para tapar el video */
+        .controls { 
+            position: relative;
+            background: white; 
+            padding: 10px; 
+            text-align: center; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
+            z-index: 10; 
+            flex-shrink: 0;
+            border-bottom: 1px solid #ddd;
+        }
+        
         .btn-scan { width: 65px; height: 65px; border-radius: 50%; border: 5px solid #eef2f7; background: var(--success); color: white; font-size: 1.5rem; cursor: pointer; margin-bottom: 5px; }
         
-        .list-container { flex: 1; overflow-y: auto; padding: 10px; padding-bottom: 80px; }
+        /* Contenedor de lista con FONDO SÓLIDO y scroll independiente */
+        .list-container { 
+            flex: 1; 
+            overflow-y: auto; 
+            padding: 10px; 
+            background: var(--light); /* Fondo sólido que oculta cualquier traslape */
+            position: relative;
+            z-index: 5;
+        }
         
         .card { 
-            background: white; padding: 12px; border-radius: 10px; margin-bottom: 10px; 
-            display: flex; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-left: 5px solid var(--primary);
+            background: white; 
+            padding: 12px; 
+            border-radius: 10px; 
+            margin-bottom: 10px; 
+            display: flex; 
+            align-items: center; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05); 
+            border-left: 5px solid var(--primary);
         }
-        .card-order { border-left-color: var(--dark); background: #f8f9fa; }
+        
+        .card-order { border-left-color: var(--dark); background: #e9ecef; }
         
         .card-info { flex: 1; min-width: 0; }
-        .lote-header { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
-        .lote-text { font-weight: bold; font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .lote-header { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+        .lote-text { font-weight: bold; font-size: 1.1rem; color: var(--dark); }
         
-        /* Badge llamativo para el Total de Cajas */
-        .box-badge { background: var(--warning); color: white; padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; }
+        /* Badge naranja para cajas */
+        .box-badge { 
+            background: var(--warning); 
+            color: white; 
+            padding: 2px 8px; 
+            border-radius: 6px; 
+            font-size: 0.8rem; 
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(253, 126, 20, 0.3);
+        }
         
-        .qty-badge { background: var(--primary); color: white; padding: 6px 10px; border-radius: 20px; font-weight: bold; font-size: 0.9rem; margin-right: 8px; white-space: nowrap; }
+        .qty-badge { background: var(--primary); color: white; padding: 6px 12px; border-radius: 20px; font-weight: bold; font-size: 0.9rem; margin-right: 8px; }
         
-        .btn-icon { background: none; border: none; font-size: 1.2rem; cursor: pointer; padding: 5px; opacity: 0.7; }
+        .btn-icon { background: none; border: none; font-size: 1.3rem; cursor: pointer; padding: 5px; }
 
         /* Modales */
-        .panel { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 85%; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); z-index: 4000; display: none; text-align: center; }
+        .panel { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 85%; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); z-index: 4000; display: none; text-align: center; }
         .panel input { width: 100%; padding: 12px; margin: 10px 0; font-size: 1.2rem; text-align: center; border: 2px solid #ddd; border-radius: 8px; box-sizing: border-box;}
-        .btn-block { width: 100%; padding: 15px; margin-top: 10px; border: none; border-radius: 8px; font-weight: bold; color: white; }
+        .btn-block { width: 100%; padding: 15px; margin-top: 10px; border: none; border-radius: 8px; font-weight: bold; color: white; font-size: 1rem; }
         .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 3500; display: none; }
     </style>
 </head>
@@ -49,19 +91,20 @@
     
     <div class="controls">
         <button class="btn-scan" id="btn-read" onclick="activarEscaneo()">📸</button>
-        <div style="display: flex; justify-content: space-around; font-size: 0.75rem; font-weight: bold; color: var(--dark);">
-            <div onclick="exportarCSV()">📥 EXPORTAR</div>
-            <div onclick="toggleTorch()">⚡ LINTERNA</div>
-            <div onclick="borrarTodo()" style="color: var(--error);">🗑️ LIMPIAR</div>
+        <div style="display: flex; justify-content: space-around; font-size: 0.8rem; font-weight: bold;">
+            <div onclick="exportarCSV()" style="color: var(--primary); cursor:pointer;">📥 EXPORTAR</div>
+            <div onclick="toggleTorch()" style="color: var(--dark); cursor:pointer;">⚡ LINTERNA</div>
+            <div onclick="borrarTodo()" style="color: var(--error); cursor:pointer;">🗑️ LIMPIAR</div>
         </div>
     </div>
 
     <div class="list-container" id="lista-escaneos"></div>
+    
     <div class="overlay" id="overlay"></div>
     
     <div id="panel-pedido" class="panel">
         <h3>ID DEL PEDIDO</h3>
-        <input type="text" id="in-pedido" placeholder="Número de pedido">
+        <input type="text" id="in-pedido" placeholder="Ingrese ID">
         <button class="btn-block" style="background:var(--success)" onclick="guardarPedido()">COMENZAR</button>
     </div>
 
@@ -163,7 +206,7 @@
             if(idPedido) {
                 lista.innerHTML += `
                     <div class="card card-order">
-                        <div class="card-info"><b>ID PEDIDO: ${idPedido}</b></div>
+                        <div class="card-info"><b>PEDIDO: ${idPedido}</b></div>
                         <button class="btn-icon" onclick="preguntarCambioPedido()">📝</button>
                     </div>`;
             }
@@ -193,6 +236,7 @@
 
         function eliminarLote(l) { if(confirm("¿Eliminar lote " + l + "?")) { delete memoria[l]; guardarYRefrescar(); } }
         function borrarTodo() { if(confirm("¿Limpiar lista?")) { memoria = {}; guardarYRefrescar(); } }
+        
         function cerrarTodo() { 
             document.getElementById('overlay').style.display = 'none';
             document.getElementById('panel-tipo').style.display = 'none'; 
@@ -204,11 +248,11 @@
 
         function toggleTorch() {
             torchOn = !torchOn;
-            scanner.applyVideoConstraints({ advanced: [{ torch: torchOn }] }).catch(e => alert("Flash no disponible"));
+            scanner.applyVideoConstraints({ advanced: [{ torch: torchOn }] }).catch(e => alert("No disponible"));
         }
 
         function exportarCSV() {
-            let csv = "ID Pedido: " + idPedido + "\nLote,Std,Cajas,Parcial,Total\n";
+            let csv = "Pedido: " + idPedido + "\nLote,Std,Cajas,Parcial,Total\n";
             for(let l in memoria) {
                 const m = memoria[l];
                 csv += `${l},${m.std},${m.cajas},${m.parcial},${(m.cajas*m.std)+m.parcial}\n`;
