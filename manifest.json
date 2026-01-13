@@ -1,15 +1,15 @@
 {
   "name": "Scanner PL Pro",
   "short_name": "ScannerPL",
-  "start_url": ".",
+  "start_url": "./static/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#007bff",
   "icons": [
     {
-      "src": "icon.png",
+      "src": "logo.jpg",
       "sizes": "512x512",
-      "type": "image/png",
+      "type": "image/jpg",
       "purpose": "any maskable"
     }
   ]
