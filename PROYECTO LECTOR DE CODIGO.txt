@@ -1,0 +1,33 @@
+PROYECTO LECTOR DE CODIGO DE BARRAS EN CELULAR
+
+instalamos ngrok   https://dashboard.ngrok.com/get-started/setup/linux
+snap install ngrok
+
+genera el autoToken
+ngrok config add-authtoken 37fngjpbFCbycZoIXhMtQWrHRdX_27gCsYwsBzT2ZHVrt4KpX
+
+sudo apt-get update
+sudo apt-get upgrade
+
+
+apt install python3-pip
+
+
+
+
+apt install python3.13-venv
+
+python3 -m venv lector
+
+
+source lector/bin/activate
+pip3 install flask
+pip install flask pandas openpyxl pytesseract pillow opencv-python
+
+en otra terminal: python3 pl/app.py
+
+ejecutar  en una terminal para que funcione la camara
+ngrok http 5000
+
+en otra terminal: python3 app.py
+
