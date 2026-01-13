@@ -1,15 +1,16 @@
 {
-  "name": "סורק מלאי",
-  "short_name": "סורק מלאי",
-  "start_url": "index.html",
+  "name": "Scanner PL Pro",
+  "short_name": "ScannerPL",
+  "start_url": ".",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#007bff",
   "icons": [
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/2850/2850641.png",
+      "src": "icon.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
