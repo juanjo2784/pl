@@ -3,31 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <link rel="manifest" href="manifest.json">
-    <title>Scanner Pro - Pedidos</title>
+    <title>Scanner Pro - Botón Eliminar</title>
     <script src="html5-qrcode.min.js"></script>
     <style>
         :root { --primary: #007bff; --success: #28a745; --error: #dc3545; --dark: #2c3e50; --light: #f4f7f6; }
         body { font-family: sans-serif; background: var(--light); margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         
-        /* Cabecera del Pedido */
-        .order-header { background: var(--dark); color: white; padding: 10px; text-align: center; font-size: 0.9rem; display: flex; justify-content: space-between; align-items: center; }
+        .order-header { background: var(--dark); color: white; padding: 10px; text-align: center; font-size: 0.9rem; display: flex; justify-content: space-between; align-items: center; z-index: 100; }
         
         #scanner-container { width: 100%; background: #000; height: 30vh; position: relative; }
         #reader { width: 100% !important; height: 100% !important; }
         
         .controls { padding: 15px; background: white; text-align: center; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); z-index: 10; }
-        .btn-scan { width: 70px; height: 70px; border-radius: 50%; border: 6px solid #eef2f7; background: var(--success); color: white; font-size: 1.5rem; }
+        .btn-scan { width: 75px; height: 75px; border-radius: 50%; border: 6px solid #eef2f7; background: var(--success); color: white; font-size: 1.8rem; cursor: pointer; transition: transform 0.1s; }
+        .btn-scan:active { transform: scale(0.9); }
         
         .list-container { flex: 1; overflow-y: auto; padding: 10px; }
         
-        /* Swipe to Delete */
-        .swipe-item { position: relative; overflow: hidden; border-radius: 10px; margin-bottom: 10px; background: var(--error); }
-        .card { background: white; padding: 15px; display: flex; align-items: center; justify-content: space-between; position: relative; z-index: 2; transition: transform 0.3s ease; touch-action: pan-y; }
-        .delete-btn { position: absolute; right: 0; top: 0; height: 100%; width: 80px; background: var(--error); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; z-index: 1; }
-
-        .qty-badge { background: var(--primary); color: white; padding: 5px 12px; border-radius: 20px; font-weight: bold; }
+        /* Tarjeta de registro con botón de eliminar integrado */
+        .card { 
+            background: white; padding: 12px; border-radius: 10px; margin-bottom: 8px; 
+            display: flex; align-items: center; justify-content: space-between; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05); 
+        }
+        .card-info { flex: 1; }
+        .qty-badge { background: var(--primary); color: white; padding: 5px 12px; border-radius: 20px; font-weight: bold; margin: 0 10px; min-width: 50px; text-align: center; }
         
+        /* Botón de eliminar con icono */
+        .btn-delete { background: var(--error); color: white; border: none; border-radius: 8px; padding: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .btn-delete:active { background: #b02a37; }
+
         /* Modales */
         .panel { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 85%; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); z-index: 4000; display: none; text-align: center; }
         .panel input { width: 100%; padding: 12px; margin: 10px 0; font-size: 1.2rem; text-align: center; border: 2px solid #ddd; border-radius: 8px; box-sizing: border-box;}
@@ -38,7 +43,7 @@
 <body>
     <div class="order-header">
         <span id="display-pedido">Pedido: No definido</span>
-        <button onclick="preguntarPedido()" style="background:white; border:none; border-radius:4px; padding:2px 8px; font-size:0.7rem;">Cambiar ID</button>
+        <button onclick="preguntarPedido()" style="background:white; border:none; border-radius:4px; padding:4px 10px; font-size:0.7rem; color:black">CAMBIAR ID</button>
     </div>
 
     <div id="scanner-container"><div id="reader"></div></div>
@@ -46,19 +51,17 @@
     <div class="controls">
         <button class="btn-scan" id="btn-read">📸</button>
         <div style="margin-top: 10px; display: flex; justify-content: space-around; font-size: 0.8rem;">
-            <button onclick="exportarCSV()" style="background:none; border:none; color:var(--primary); font-weight:bold;">📥 EXPORTAR CSV</button>
+            <button onclick="exportarCSV()" style="background:none; border:none; color:var(--primary); font-weight:bold;">📥 EXPORTAR</button>
             <button onclick="toggleTorch()" style="background:none; border:none; color:var(--dark);">⚡ LINTERNA</button>
-            <button onclick="borrarTodo()" style="background:none; border:none; color:var(--error);">🗑️ LIMPIAR LISTA</button>
+            <button onclick="borrarTodo()" style="background:none; border:none; color:var(--error);">🗑️ LIMPIAR</button>
         </div>
     </div>
 
     <div class="list-container" id="lista-escaneos"></div>
-
     <div class="overlay" id="overlay"></div>
     
-    <div id="panel-pedido" class="panel" style="display:block;">
+    <div id="panel-pedido" class="panel">
         <h3>ID DEL PEDIDO</h3>
-        <p>Ingresa el número de pedido para comenzar</p>
         <input type="text" id="in-pedido" placeholder="Ej: 4500123">
         <button class="btn-block" style="background:var(--success)" onclick="guardarPedido()">COMENZAR</button>
     </div>
@@ -95,11 +98,16 @@
             dibujarLista();
         }
 
+        // Botón de escaneo con evento simplificado
+        document.getElementById('btn-read').onclick = function() {
+            leerAhora = true;
+            this.style.background = "#ffc107"; // Amarillo buscando
+        };
+
         function actualizarInterfazPedido() {
             if(idPedido) {
                 document.getElementById('display-pedido').innerText = "Pedido: " + idPedido;
-                document.getElementById('panel-pedido').style.display = 'none';
-                document.getElementById('overlay').style.display = 'none';
+                cerrarTodo();
             } else {
                 document.getElementById('overlay').style.display = 'block';
                 document.getElementById('panel-pedido').style.display = 'block';
@@ -114,14 +122,11 @@
 
         function guardarPedido() {
             let val = document.getElementById('in-pedido').value.trim();
-            if(val) {
-                idPedido = val;
-                localStorage.setItem('id_pedido_actual', idPedido);
-                actualizarInterfazPedido();
-            }
+            if(val) { idPedido = val; localStorage.setItem('id_pedido_actual', idPedido); actualizarInterfazPedido(); }
         }
 
         function abrirValidacion() {
+            document.getElementById('btn-read').style.background = "var(--success)";
             document.getElementById('overlay').style.display = 'block';
             document.getElementById('panel-tipo').style.display = 'block';
             document.getElementById('lbl-lote-actual').innerText = "Lote: " + loteActual;
@@ -149,99 +154,3 @@
             document.getElementById('lbl-instruccion').innerText = instruccion;
             document.getElementById('in-valor').value = valorDefecto;
         }
-
-        function procesarGuardado() {
-            const v = parseInt(document.getElementById('in-valor').value);
-            if(isNaN(v) || v < 0) return;
-            if(!memoria[loteActual]) memoria[loteActual] = { std: 0, cajas: 0, parcial: 0 };
-
-            if(modoActual === "definir_estandar") { memoria[loteActual].std = v; memoria[loteActual].cajas = 1; }
-            else if(modoActual === "sumar_cajas") { memoria[loteActual].cajas += v; }
-            else if(modoActual === "parcial") { memoria[loteActual].parcial += v; }
-
-            guardarYRefrescar();
-            cerrarTodo();
-        }
-
-        function guardarYRefrescar() {
-            localStorage.setItem('inv_v21_final', JSON.stringify(memoria));
-            dibujarLista();
-        }
-
-        function dibujarLista() {
-            const lista = document.getElementById('lista-escaneos');
-            lista.innerHTML = "";
-            Object.keys(memoria).reverse().forEach(l => {
-                const m = memoria[l];
-                const total = (m.cajas * m.std) + m.parcial;
-                const itemHtml = `
-                    <div class="swipe-item" id="item-${l}">
-                        <div class="delete-btn" onclick="eliminarLote('${l}')">BORRAR</div>
-                        <div class="card" ontouchstart="handleTouchStart(event)" ontouchmove="handleTouchMove(event)">
-                            <div style="flex:1">
-                                <span style="font-weight:bold">${l}</span><br>
-                                <small>${m.cajas} cjs x ${m.std} + ${m.parcial} u.</small>
-                            </div>
-                            <div class="qty-badge">${total} u.</div>
-                        </div>
-                    </div>`;
-                lista.insertAdjacentHTML('beforeend', itemHtml);
-            });
-        }
-
-        let xDown = null;
-        function handleTouchStart(evt) { xDown = evt.touches[0].clientX; }
-        function handleTouchMove(evt) {
-            if (!xDown) return;
-            let xUp = evt.touches[0].clientX;
-            let xDiff = xDown - xUp;
-            let card = evt.currentTarget;
-            if (xDiff > 50) card.style.transform = "translateX(-80px)";
-            if (xDiff < -50) card.style.transform = "translateX(0)";
-            xDown = null;
-        }
-
-        function eliminarLote(l) {
-            delete memoria[l];
-            guardarYRefrescar();
-        }
-
-        function borrarTodo() {
-            if(confirm("¿Limpiar toda la lista actual?")) {
-                memoria = {};
-                guardarYRefrescar();
-            }
-        }
-
-        function cerrarTodo() {
-            document.getElementById('overlay').style.display = 'none';
-            document.getElementById('panel-tipo').style.display = 'none';
-            document.getElementById('panel-datos').style.display = 'none';
-            document.getElementById('panel-pedido').style.display = 'none';
-            leerAhora = false;
-        }
-
-        function toggleTorch() {
-            torchOn = !torchOn;
-            scanner.applyVideoConstraints({ advanced: [{ torch: torchOn }] }).catch(e => alert("Sin Flash"));
-        }
-
-        function exportarCSV() {
-            let csv = "Pedido: " + idPedido + "\nLote,Std,Cajas,Parcial,Total\n";
-            for(let l in memoria) {
-                const m = memoria[l];
-                csv += `${l},${m.std},${m.cajas},${m.parcial},${(m.cajas*m.std)+m.parcial}\n`;
-            }
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const link = document.createElement("a");
-            link.href = URL.createObjectURL(blob);
-            // El nombre del archivo ahora usa el ID del Pedido
-            link.download = `Pedido_${idPedido}.csv`;
-            link.click();
-        }
-
-        document.getElementById('btn-read').onclick = () => { leerAhora = true; };
-        window.onload = iniciarApp;
-    </script>
-</body>
-</html>
