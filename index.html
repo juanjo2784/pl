@@ -4,84 +4,35 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <link rel="manifest" href="manifest.json">
-    <title>Scanner PL Pro v4</title>
+    <title>Scanner PL Pro v5</title>
     <script src="html5-qrcode.min.js"></script>
     <style>
         :root { --primary: #007bff; --success: #28a745; --error: #dc3545; --warning: #fd7e14; --dark: #2c3e50; --light: #f4f7f6; }
-        
         body { font-family: sans-serif; background: var(--light); margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         
-        /* Contenedor de cámara con altura fija */
-        #scanner-container { 
-            width: 100%; 
-            background: #000; 
-            height: 25vh; 
-            position: relative; 
-            flex-shrink: 0; 
-            z-index: 1;
-        }
+        #scanner-container { width: 100%; background: #000; height: 25vh; position: relative; flex-shrink: 0; z-index: 1; }
         #reader { width: 100% !important; height: 100% !important; }
         
-        /* Barra de controles con FONDO SÓLIDO para tapar el video */
-        .controls { 
-            position: relative;
-            background: white; 
-            padding: 10px; 
-            text-align: center; 
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
-            z-index: 10; 
-            flex-shrink: 0;
-            border-bottom: 1px solid #ddd;
-        }
-        
+        .controls { position: relative; background: white; padding: 10px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); z-index: 10; flex-shrink: 0; border-bottom: 1px solid #ddd; }
         .btn-scan { width: 65px; height: 65px; border-radius: 50%; border: 5px solid #eef2f7; background: var(--success); color: white; font-size: 1.5rem; cursor: pointer; margin-bottom: 5px; }
         
-        /* Contenedor de lista con FONDO SÓLIDO y scroll independiente */
-        .list-container { 
-            flex: 1; 
-            overflow-y: auto; 
-            padding: 10px; 
-            background: var(--light); /* Fondo sólido que oculta cualquier traslape */
-            position: relative;
-            z-index: 5;
-        }
+        .list-container { flex: 1; overflow-y: auto; padding: 10px; background: var(--light); position: relative; z-index: 5; }
         
-        .card { 
-            background: white; 
-            padding: 12px; 
-            border-radius: 10px; 
-            margin-bottom: 10px; 
-            display: flex; 
-            align-items: center; 
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05); 
-            border-left: 5px solid var(--primary);
-        }
-        
+        .card { background: white; padding: 12px; border-radius: 10px; margin-bottom: 10px; display: flex; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-left: 5px solid var(--primary); }
         .card-order { border-left-color: var(--dark); background: #e9ecef; }
         
         .card-info { flex: 1; min-width: 0; }
         .lote-header { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
         .lote-text { font-weight: bold; font-size: 1.1rem; color: var(--dark); }
         
-        /* Badge naranja para cajas */
-        .box-badge { 
-            background: var(--warning); 
-            color: white; 
-            padding: 2px 8px; 
-            border-radius: 6px; 
-            font-size: 0.8rem; 
-            font-weight: bold;
-            box-shadow: 0 2px 4px rgba(253, 126, 20, 0.3);
-        }
-        
+        .box-badge { background: var(--warning); color: white; padding: 2px 8px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; box-shadow: 0 2px 4px rgba(253, 126, 20, 0.3); }
         .qty-badge { background: var(--primary); color: white; padding: 6px 12px; border-radius: 20px; font-weight: bold; font-size: 0.9rem; margin-right: 8px; }
         
         .btn-icon { background: none; border: none; font-size: 1.3rem; cursor: pointer; padding: 5px; }
 
-        /* Modales */
         .panel { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 85%; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); z-index: 4000; display: none; text-align: center; }
         .panel input { width: 100%; padding: 12px; margin: 10px 0; font-size: 1.2rem; text-align: center; border: 2px solid #ddd; border-radius: 8px; box-sizing: border-box;}
-        .btn-block { width: 100%; padding: 15px; margin-top: 10px; border: none; border-radius: 8px; font-weight: bold; color: white; font-size: 1rem; }
+        .btn-block { width: 100%; padding: 15px; margin-top: 10px; border: none; border-radius: 8px; font-weight: bold; color: white; }
         .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 3500; display: none; }
     </style>
 </head>
@@ -99,7 +50,6 @@
     </div>
 
     <div class="list-container" id="lista-escaneos"></div>
-    
     <div class="overlay" id="overlay"></div>
     
     <div id="panel-pedido" class="panel">
@@ -214,14 +164,19 @@
             Object.keys(memoria).reverse().forEach(l => {
                 const m = memoria[l];
                 const totalU = (m.cajas * m.std) + m.parcial;
+                
+                // LÓGICA DE CONTEO DE CAJAS SOLICITADA
+                // Si hay parciales, se cuenta como una caja adicional (caja abierta)
+                const bultosTotales = m.parcial > 0 ? (m.cajas + 1) : m.cajas;
+
                 lista.innerHTML += `
                     <div class="card">
                         <div class="card-info">
                             <div class="lote-header">
                                 <span class="lote-text">${l}</span>
-                                <span class="box-badge">${m.cajas} CJ</span>
+                                <span class="box-badge">${bultosTotales} CJ</span>
                             </div>
-                            <small>${m.cajas} x ${m.std} + ${m.parcial} u.</small>
+                            <small>${m.cajas} completas + ${m.parcial} u. sueltas</small>
                         </div>
                         <div class="qty-badge">${totalU} u.</div>
                         <button class="btn-icon" onclick="eliminarLote('${l}')">🗑️</button>
@@ -252,7 +207,7 @@
         }
 
         function exportarCSV() {
-            let csv = "Pedido: " + idPedido + "\nLote,Std,Cajas,Parcial,Total\n";
+            let csv = "Pedido: " + idPedido + "\nLote,Std,Cajas_Completas,Cajas_Parciales,Total_Unidades\n";
             for(let l in memoria) {
                 const m = memoria[l];
                 csv += `${l},${m.std},${m.cajas},${m.parcial},${(m.cajas*m.std)+m.parcial}\n`;
