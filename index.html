@@ -3,86 +3,129 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Scanner App - Entrada Manual</title>
+    <title>Scanner Pro - High Speed</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root { --p: #28a745; --s: #007bff; --d: #dc3545; --dark: #212529; --light: #f8f9fa; }
-        body { font-family: sans-serif; margin: 0; background: var(--light); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        body { font-family: -apple-system, sans-serif; margin: 0; background: var(--light); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         .hidden { display: none !important; }
         
         /* HEADER */
-        .header-pedido { background: var(--dark); color: white; padding: 15px; text-align: center; font-weight: bold; }
+        .header-pedido { background: var(--dark); color: white; padding: 12px; text-align: center; font-weight: bold; font-size: 14px; }
 
         /* LISTA CENTRAL */
-        .list-container { flex: 1; overflow-y: auto; padding: 10px; padding-bottom: 100px; }
-        .lote-item { background: white; padding: 15px; border-radius: 12px; margin-bottom: 12px; border-left: 6px solid var(--s); box-shadow: 0 3px 6px rgba(0,0,0,0.1); position: relative; }
-        
-        .btn-delete { position: absolute; top: 10px; right: 10px; color: var(--d); border: none; background: none; font-size: 1.2em; cursor: pointer; }
+        .list-container { flex: 1; overflow-y: auto; padding: 10px; padding-bottom: 90px; }
+        .lote-item { background: white; padding: 12px; border-radius: 10px; margin-bottom: 8px; border-left: 5px solid var(--s); box-shadow: 0 2px 4px rgba(0,0,0,0.1); position: relative; }
+        .btn-delete { position: absolute; top: 8px; right: 8px; color: #ccc; border: none; background: none; font-size: 1.1em; }
 
-        /* CONTROLES DE EDICIÓN */
-        .controls-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 10px; }
-        .input-edit { padding: 8px; border-radius: 6px; border: 1px solid #ced4da; width: 70px; font-size: 16px; text-align: center; }
-
-        /* RESULTADOS DE CÁLCULO */
-        .calc-res { background: #f1f3f5; padding: 10px; border-radius: 8px; margin-top: 10px; font-size: 0.9em; border: 1px solid #dee2e6; display: flex; justify-content: space-between; }
-        .calc-res b { color: var(--s); font-size: 1.1em; }
-
-        /* FOOTER FIJO */
-        .nav-footer { position: fixed; bottom: 0; left: 0; right: 0; background: var(--dark); padding: 15px; display: flex; justify-content: space-around; z-index: 100; }
-        .icon-btn { width: 60px; height: 60px; border-radius: 50%; border: none; color: white; font-size: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        /* MIRA DE PRECISIÓN */
+        .scanner-viewfinder {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 85%;
+            height: 80px;
+            border: 2px solid rgba(40, 167, 69, 0.8);
+            border-radius: 4px;
+            z-index: 5;
+            pointer-events: none;
+            box-shadow: 0 0 0 4000px rgba(0,0,0,0.6); /* Cortina de enfoque */
+        }
+        .laser-line {
+            position: absolute;
+            top: 50%; left: 5%; width: 90%;
+            height: 2px; background: rgba(255, 0, 0, 0.6);
+            box-shadow: 0 0 5px red;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse { 0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; } }
 
         /* OVERLAY ESCANER */
-        #overlay-scanner { position: fixed; inset: 0; background: #000; z-index: 2000; display: flex; flex-direction: column; }
-        #interactive { flex: 1; position: relative; }
+        #overlay-scanner { position: fixed; inset: 0; background: #000; z-index: 2000; }
+        #interactive { width: 100%; height: 100%; position: relative; }
         #interactive video { width: 100%; height: 100%; object-fit: cover; }
-        .laser { position: absolute; top: 50%; left: 0; right: 0; height: 2px; background: red; box-shadow: 0 0 10px red; }
 
-        /* FORMULARIO POST-ESCANEO */
-        .form-pop { background: white; padding: 20px; border-radius: 20px 20px 0 0; position: absolute; bottom: 0; width: 100%; z-index: 2100; box-sizing: border-box; }
-        .btn-action { width: 100%; padding: 15px; border: none; border-radius: 8px; color: white; font-weight: bold; margin-top: 10px; }
-        input[type="number"] { width: 100%; padding: 12px; margin: 5px 0; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; }
+        /* BOTÓN CAPTURAR (Diseño tipo cámara profesional) */
+        .btn-capture-trigger {
+            position: absolute;
+            bottom: 50px; left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            padding: 18px;
+            background: var(--p);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            z-index: 10;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            text-transform: uppercase;
+        }
+
+        /* CONTROLES LISTA */
+        .controls-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+        .input-edit { padding: 6px; border-radius: 4px; border: 1px solid #ddd; width: 60px; font-size: 15px; text-align: center; }
+        .calc-res { background: #f8f9fa; padding: 8px; border-radius: 6px; margin-top: 8px; display: flex; justify-content: space-between; font-size: 13px; border: 1px dashed #ccc; }
+
+        /* FOOTER FIJO */
+        .nav-footer { position: fixed; bottom: 0; left: 0; right: 0; background: var(--dark); padding: 12px; display: flex; justify-content: space-around; z-index: 100; }
+        .icon-btn { width: 55px; height: 55px; border-radius: 50%; border: none; color: white; font-size: 22px; display: flex; align-items: center; justify-content: center; }
+
+        /* FORM POPUP */
+        .form-pop { background: white; padding: 20px; border-radius: 15px 15px 0 0; position: absolute; bottom: 0; width: 100%; z-index: 2100; box-sizing: border-box; }
+        .btn-action { width: 100%; padding: 14px; border: none; border-radius: 8px; color: white; font-weight: bold; margin-top: 8px; font-size: 16px; }
     </style>
 </head>
 <body>
 
     <div id="screen-intro" style="padding: 20px; text-align: center; margin-top: 15vh;">
         <div style="background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
-            <h2>Pedido</h2>
-            <input type="text" id="inp-pedido" placeholder="Ingrese ID del Pedido">
+            <i class="fas fa-boxes fa-3x" style="color:var(--s); margin-bottom:15px;"></i>
+            <h2>Control de Carga</h2>
+            <input type="text" id="inp-pedido" placeholder="Referencia del Pedido">
             <button class="btn-action" style="background:var(--s);" onclick="iniciarApp('rapido')">TRABAJO RÁPIDO</button>
-            <button class="btn-action" style="background:var(--dark);" onclick="iniciarApp('uno-a-uno')">UNO A UNO</button>
+            <button class="btn-action" style="background:var(--dark);" onclick="iniciarApp('uno-a-uno')">UNO A UNO (DINÁMICO)</button>
         </div>
     </div>
 
     <div id="screen-main" class="hidden">
-        <div class="header-pedido">Pedido: <span id="txt-pedido"></span></div>
+        <div class="header-pedido">PEDIDO: <span id="txt-pedido"></span></div>
         <div class="list-container" id="container-lotes"></div>
-        
         <div class="nav-footer">
-            <button class="icon-btn" style="background:var(--d);" onclick="location.reload()"><i class="fas fa-undo"></i></button>
-            <button class="icon-btn" style="background:var(--p);" onclick="activarEscaneo()"><i class="fas fa-barcode"></i></button>
-            <button class="icon-btn" style="background:var(--s);" onclick="descargarCSV()"><i class="fas fa-file-download"></i></button>
+            <button class="icon-btn" style="background:var(--d);" onclick="location.reload()"><i class="fas fa-sync-alt"></i></button>
+            <button class="icon-btn" style="background:var(--p); transform: scale(1.1);" onclick="activarEscaneo()"><i class="fas fa-camera"></i></button>
+            <button class="icon-btn" style="background:var(--s);" onclick="descargarCSV()"><i class="fas fa-file-export"></i></button>
         </div>
     </div>
 
     <div id="overlay-scanner" class="hidden">
-        <div id="interactive"><div class="laser"></div></div>
+        <div id="interactive">
+            <div class="scanner-viewfinder"><div class="laser-line"></div></div>
+            <button id="btn-confirm-capture" class="btn-capture-trigger hidden" onclick="procesarCapturaManual()">
+                <i class="fas fa-check"></i> CAPTURAR LOTE
+            </button>
+            <button onclick="cerrarEscaner()" style="position:absolute; top:20px; left:20px; color:white; background:rgba(0,0,0,0.5); border:none; border-radius:50%; width:40px; height:40px; z-index:20;">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+        </div>
+        
         <div id="form-scanner" class="form-pop hidden">
-            <h3 id="txt-lote-det" style="margin:0;">Lote: --</h3>
-            <div id="dynamic-fields"></div>
-            <button class="btn-action" style="background:var(--d);" onclick="cerrarEscaner()">CANCELAR</button>
+            <h3 id="txt-lote-det" style="margin:0; color:var(--s);">Lote Detectado</h3>
+            <div id="dynamic-fields" style="margin-top:10px;"></div>
+            <button class="btn-action" style="background:var(--d); margin-top:15px;" onclick="cerrarEscaner()">CANCELAR</button>
         </div>
     </div>
 
 <script>
-    let app = { modo: "", lotes: [], memoriaEstandar: {} };
+    let app = { modo: "", lotes: [], memoriaEstandar: {}, ultimoCodigo: "" };
 
     function iniciarApp(m) {
         const p = document.getElementById('inp-pedido').value;
-        if(!p) return alert("Ingrese ID de pedido");
+        if(!p) return;
         app.modo = m;
-        document.getElementById('txt-pedido').innerText = p;
+        document.getElementById('txt-pedido').innerText = p.toUpperCase();
         document.getElementById('screen-intro').classList.add('hidden');
         document.getElementById('screen-main').classList.remove('hidden');
     }
@@ -90,21 +133,45 @@
     function activarEscaneo() {
         document.getElementById('overlay-scanner').classList.remove('hidden');
         document.getElementById('form-scanner').classList.add('hidden');
+        document.getElementById('btn-confirm-capture').classList.add('hidden');
+
         Quagga.init({
-            inputStream: { name: "Live", type: "LiveStream", target: document.querySelector('#interactive'), constraints: { facingMode: "environment" } },
-            decoder: { readers: ["code_128_reader", "ean_reader"] }
+            inputStream: {
+                name: "Live",
+                type: "LiveStream",
+                target: document.querySelector('#interactive'),
+                constraints: {
+                    facingMode: "environment",
+                    aspectRatio: { min: 1, max: 2 }
+                },
+                singleChannel: false // Mejora velocidad en algunos dispositivos
+            },
+            locate: true,
+            numOfWorkers: navigator.hardwareConcurrency || 4, // Usa toda la potencia del procesador
+            decoder: {
+                readers: ["code_128_reader", "ean_reader"], // Solo formatos esenciales para ganar velocidad
+                multiple: false
+            }
         }, (err) => {
-            if (err) return alert("Error: " + err);
+            if (err) return alert("Cámara no disponible.");
             Quagga.start();
         });
     }
 
     Quagga.onDetected((res) => {
-        Quagga.stop();
-        const code = res.codeResult.code;
-        if (navigator.vibrate) navigator.vibrate(100);
-        mostrarFormulario(code);
+        app.ultimoCodigo = res.codeResult.code;
+        const btn = document.getElementById('btn-confirm-capture');
+        btn.innerHTML = `<small>CONFIRMAR LOTE:</small><br>${app.ultimoCodigo}`;
+        btn.classList.remove('hidden');
+        if (navigator.vibrate) navigator.vibrate(40);
     });
+
+    function procesarCapturaManual() {
+        if(!app.ultimoCodigo) return;
+        Quagga.stop();
+        document.getElementById('btn-confirm-capture').classList.add('hidden');
+        mostrarFormulario(app.ultimoCodigo);
+    }
 
     function mostrarFormulario(code) {
         document.getElementById('txt-lote-det').innerText = "Lote: " + code;
@@ -114,23 +181,30 @@
 
         if(app.modo === 'rapido') {
             fields.innerHTML = `
-                <input type="number" id="f-est" placeholder="Estándar" value="${est}">
-                <input type="number" id="f-com" placeholder="Cajas Completas">
-                <input type="number" id="f-par" placeholder="Unidades Parciales">
-                <button class="btn-action" style="background:var(--p);" onclick="validarYGuardar('${code}', 'rapido')">GUARDAR</button>
+                <label style="font-size:12px; color:#666;">CANTIDAD ESTÁNDAR POR CAJA</label>
+                <input type="number" id="f-est" value="${est}" placeholder="Ej: 12">
+                <label style="font-size:12px; color:#666;">CAJAS COMPLETAS</label>
+                <input type="number" id="f-com" placeholder="0">
+                <label style="font-size:12px; color:#666;">UNIDADES PARCIALES</label>
+                <input type="number" id="f-par" placeholder="0">
+                <button class="btn-action" style="background:var(--p);" onclick="guardar('${code}')">GUARDAR REGISTRO</button>
             `;
         } else {
             if(!est) {
                 fields.innerHTML = `
-                    <input type="number" id="f-est" placeholder="Definir Estándar">
-                    <button class="btn-action" style="background:var(--s);" onclick="definirEstandar('${code}')">CONTINUAR</button>
+                    <label>Este es un lote nuevo. Define su Estándar:</label>
+                    <input type="number" id="f-est" placeholder="Cantidad por caja">
+                    <button class="btn-action" style="background:var(--s);" onclick="definirEstandar('${code}')">DEFINIR Y CONTINUAR</button>
                 `;
             } else {
                 fields.innerHTML = `
-                    <p>Estándar: <b>${est}</b></p>
-                    <input type="number" id="f-par" placeholder="Unidades Parciales">
-                    <button class="btn-action" style="background:var(--s);" onclick="validarYGuardar('${code}', 'full')">CAJA COMPLETA</button>
-                    <button class="btn-action" style="background:var(--p);" onclick="validarYGuardar('${code}', 'parcial')">AÑADIR PARCIAL</button>
+                    <div style="background:#e7f3ff; padding:10px; border-radius:8px; margin-bottom:10px;">
+                        Estándar actual: <b>${est}</b> unidades/caja
+                    </div>
+                    <label>UNIDADES PARCIALES</label>
+                    <input type="number" id="f-par" placeholder="0">
+                    <button class="btn-action" style="background:var(--s);" onclick="guardarUno('${code}', true)">+1 CAJA COMPLETA</button>
+                    <button class="btn-action" style="background:var(--p);" onclick="guardarUno('${code}', false)">AÑADIR PARCIAL</button>
                 `;
             }
         }
@@ -138,29 +212,27 @@
 
     function definirEstandar(code) {
         const val = parseInt(document.getElementById('f-est').value);
-        if(!val || val <= 0) return alert("Estándar inválido");
+        if(!val) return;
         app.memoriaEstandar[code] = val;
         mostrarFormulario(code);
     }
 
-    function validarYGuardar(code, tipo) {
-        const est = app.memoriaEstandar[code] || parseInt(document.getElementById('f-est')?.value);
-        if(!est) return alert("Falta estándar");
+    function guardar(code) {
+        const est = parseInt(document.getElementById('f-est').value);
+        const com = parseInt(document.getElementById('f-com').value) || 0;
+        const par = parseInt(document.getElementById('f-par').value) || 0;
+        if(par >= est) return alert("Parcial no puede ser mayor al estándar");
         app.memoriaEstandar[code] = est;
-
-        let com = 0, par = 0;
-        if(tipo === 'rapido') {
-            com = parseInt(document.getElementById('f-com').value) || 0;
-            par = parseInt(document.getElementById('f-par').value) || 0;
-        } else if(tipo === 'full') {
-            com = 1; par = 0;
-        } else {
-            com = 0; par = parseInt(document.getElementById('f-par').value) || 0;
-        }
-
-        if(par >= est) return alert(`El parcial no puede ser >= al estándar (${est})`);
-
         app.lotes.unshift({ id: code, est, com, par });
+        actualizarLista();
+        cerrarEscaner();
+    }
+
+    function guardarUno(code, esFull) {
+        const est = app.memoriaEstandar[code];
+        const par = parseInt(document.getElementById('f-par').value) || 0;
+        if(par >= est) return alert("Parcial no puede ser mayor al estándar");
+        app.lotes.unshift({ id: code, est, com: esFull ? 1 : 0, par: esFull ? 0 : par });
         actualizarLista();
         cerrarEscaner();
     }
@@ -168,57 +240,42 @@
     function actualizarLista() {
         const div = document.getElementById('container-lotes');
         div.innerHTML = app.lotes.map((l, i) => {
-            const totalU = (parseInt(l.com) * parseInt(l.est)) + parseInt(l.par);
-            const totalC = parseInt(l.com) + (l.par > 0 ? 1 : 0);
-
+            const totU = (l.com * l.est) + l.par;
+            const totC = l.com + (l.par > 0 ? 1 : 0);
             return `
                 <div class="lote-item">
-                    <button class="btn-delete" onclick="eliminarLote(${i})"><i class="fas fa-trash-alt"></i></button>
-                    <b>${l.id}</b> <small>(Est: ${l.est})</small>
+                    <button class="btn-delete" onclick="eliminar(${i})"><i class="fas fa-times"></i></button>
+                    <b style="color:var(--s);">${l.id}</b> <span style="font-size:12px; color:#888;">(Est: ${l.est})</span>
                     <div class="controls-row">
-                        <span>Cajas:</span>
-                        <input type="number" class="input-edit" value="${l.com}" onchange="actualizarDato(${i}, 'com', this.value)">
-                        <span>Parcial:</span>
-                        <input type="number" class="input-edit" value="${l.par}" onchange="actualizarDato(${i}, 'par', this.value)">
+                        <span>Cjs:</span> <input type="number" class="input-edit" value="${l.com}" onchange="edit(${i},'com',this.value)">
+                        <span>Unid:</span> <input type="number" class="input-edit" value="${l.par}" onchange="edit(${i},'par',this.value)">
                     </div>
                     <div class="calc-res">
-                        <span>Tot. Cajas: <b>${totalC}</b></span>
-                        <span>Tot. Unid: <b>${totalU}</b></span>
+                        <span>TOTAL CAJAS: <b>${totC}</b></span>
+                        <span>TOTAL UNIDADES: <b>${totU}</b></span>
                     </div>
                 </div>
             `;
         }).join('');
     }
 
-    function actualizarDato(idx, campo, val) {
+    function edit(idx, campo, val) {
         const v = parseInt(val) || 0;
-        if(campo === 'par' && v >= app.lotes[idx].est) {
-            alert("Excede el estándar");
-            actualizarLista();
-            return;
-        }
+        if(campo === 'par' && v >= app.lotes[idx].est) { alert("Error: Excede estándar"); actualizarLista(); return; }
         app.lotes[idx][campo] = v;
         actualizarLista();
     }
 
-    function eliminarLote(idx) {
-        if(confirm("¿Eliminar este lote?")) {
-            app.lotes.splice(idx, 1);
-            actualizarLista();
-        }
-    }
+    function eliminar(idx) { app.lotes.splice(idx, 1); actualizarLista(); }
 
     function descargarCSV() {
-        if(app.lotes.length === 0) return alert("No hay datos");
         let csv = "\uFEFFPedido,Lote,Estándar,Cajas,Parcial,Total Unidades\n";
         app.lotes.forEach(l => {
-            const tot = (l.com * l.est) + parseInt(l.par);
-            csv += `${app.pedido},${l.id},${l.est},${l.com},${l.par},${tot}\n`;
+            csv += `${document.getElementById('txt-pedido').innerText},${l.id},${l.est},${l.com},${l.par},${(l.com*l.est)+l.par}\n`;
         });
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `Pedido_${app.pedido}.csv`;
+        a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+        a.download = `Pedido_${document.getElementById('txt-pedido').innerText}.csv`;
         a.click();
     }
 
