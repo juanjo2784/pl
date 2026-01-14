@@ -3,165 +3,182 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Scanner App - Flujo Dibujo</title>
+    <title>Scanner App - Lotes</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
     <style>
-        :root { --p: #28a745; --s: #007bff; --d: #dc3545; --dark: #212529; }
-        body { font-family: sans-serif; margin: 0; background: #f4f4f4; }
+        :root { --p: #28a745; --s: #007bff; --d: #dc3545; --dark: #212529; --light: #f8f9fa; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--light); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         .hidden { display: none !important; }
+
+        /* PANTALLA 1: INTRO */
+        #screen-intro { display: flex; align-items: center; justify-content: center; height: 100vh; padding: 20px; }
+        .intro-card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 350px; text-align: center; }
         
-        /* Pantallas */
-        .screen { display: flex; flex-direction: column; height: 100vh; padding: 20px; box-sizing: border-box; }
-        
-        /* Intro */
-        .intro-card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-align: center; margin: auto; width: 100%; max-width: 400px; }
-        
-        /* Ventana Principal */
-        .header-pedido { background: var(--dark); color: white; padding: 15px; border-radius: 10px; margin-bottom: 10px; }
-        .lote-item { background: white; padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 5px solid var(--s); position: relative; }
-        
-        /* Botones Flotantes Inferiores (Como en tu dibujo) */
-        .nav-footer { position: fixed; bottom: 20px; left: 0; right: 0; display: flex; justify-content: space-around; padding: 0 20px; }
-        .round-btn { width: 60px; height: 60px; border-radius: 50%; border: none; color: white; font-size: 24px; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
-        
-        /* Formulario Flujo */
-        .form-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); color: white; padding: 20px; z-index: 100; }
-        input, select { width: 100%; padding: 15px; margin: 10px 0; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; }
-        .btn-block { width: 100%; padding: 15px; border: none; border-radius: 8px; font-weight: bold; margin-top: 10px; }
+        /* VENTANA PRINCIPAL (LISTADO) */
+        #screen-main { display: flex; flex-direction: column; height: 100vh; }
+        .header-pedido { background: var(--dark); color: white; padding: 15px; font-weight: bold; text-align: center; }
+        .list-container { flex: 1; overflow-y: auto; padding: 15px; }
+        .lote-item { background: white; padding: 15px; border-radius: 10px; margin-bottom: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-left: 5px solid var(--s); }
+
+        /* VIDEO / OVERLAY DE ESCANEO */
+        #overlay-scanner { position: fixed; inset: 0; background: #000; z-index: 1000; display: flex; flex-direction: column; }
+        #interactive { position: relative; flex: 1; width: 100%; }
+        #interactive video { width: 100%; height: 100%; object-fit: cover; }
+        .laser { position: absolute; top: 50%; left: 0; right: 0; height: 2px; background: red; box-shadow: 0 0 10px red; z-index: 5; }
+
+        /* FORMULARIO POST-ESCANEO (Flotante sobre el video) */
+        .form-pop { background: white; padding: 20px; border-radius: 20px 20px 0 0; position: absolute; bottom: 0; width: 100%; box-sizing: border-box; color: var(--dark); }
+
+        /* NAVEGACIÓN INFERIOR (3 BOTONES CON ICONOS) */
+        .nav-footer { background: var(--dark); padding: 15px; display: flex; justify-content: space-around; align-items: center; }
+        .icon-btn { width: 60px; height: 60px; border-radius: 50%; border: none; color: white; font-size: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .btn-cancel { background: var(--d); }
+        .btn-scan { background: var(--p); transform: scale(1.2); }
+        .btn-torch { background: #ffc107; color: #000; }
+
+        /* Estilos generales de inputs */
+        input, select { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; }
+        .btn-action { width: 100%; padding: 15px; border: none; border-radius: 8px; color: white; font-weight: bold; font-size: 16px; margin-top: 10px; }
     </style>
 </head>
 <body>
 
-    <div id="screen-intro" class="screen">
+    <div id="screen-intro">
         <div class="intro-card">
-            <h2>Pedido</h2>
-            <input type="text" id="input-pedido-id" placeholder="Ingrese ID Pedido">
-            <button class="btn-block" style="background: var(--s); color: white;" onclick="setModo('rapido')">TRABAJO RÁPIDO</button>
-            <button class="btn-block" style="background: var(--dark); color: white;" onclick="setModo('uno-a-uno')">UNO A UNO</button>
+            <h2 style="margin-top:0;">Nuevo Pedido</h2>
+            <input type="text" id="inp-pedido" placeholder="ID del Pedido">
+            <button class="btn-action" style="background:var(--s);" onclick="entrarApp('rapido')">TRABAJO RÁPIDO</button>
+            <button class="btn-action" style="background:var(--dark);" onclick="entrarApp('uno-a-uno')">UNO A UNO</button>
         </div>
     </div>
 
-    <div id="screen-main" class="screen hidden">
-        <div class="header-pedido">
-            <b>Pedido:</b> <span id="display-pedido">--</span>
-        </div>
-        
-        <div id="lista-lotes" style="flex: 1; overflow-y: auto;">
+    <div id="screen-main" class="hidden">
+        <div class="header-pedido">Pedido: <span id="txt-pedido"></span></div>
+        <div class="list-container" id="container-lotes">
             </div>
-
+        
         <div class="nav-footer">
-            <button class="round-btn" style="background: var(--d);" onclick="location.reload()">X</button>
-            <button class="round-btn" style="background: var(--p);" onclick="abrirScanner()">SCAN</button>
-            <button class="round-btn" style="background: var(--s);" onclick="descargarCSV()">💾</button>
+            <button class="icon-btn btn-cancel" onclick="location.reload()"><i class="fas fa-times"></i></button>
+            <button class="icon-btn btn-scan" onclick="abrirScanner()"><i class="fas fa-barcode"></i></button>
+            <button class="icon-btn btn-torch" id="torch-main" onclick="toggleFlash()"><i class="fas fa-lightbulb"></i></button>
         </div>
     </div>
 
-    <div id="overlay-flujo" class="form-overlay hidden">
-        <div id="scanner-view" style="height: 200px; background: #000; margin-bottom: 15px;"></div>
-        
-        <h3 id="flow-title">Lote: --</h3>
-        
-        <div id="form-content">
-            </div>
-        
-        <button class="btn-block" style="background: var(--d); color: white;" onclick="cerrarScanner()">CANCELAR</button>
+    <div id="overlay-scanner" class="hidden">
+        <div id="interactive">
+            <div class="laser"></div>
+        </div>
+
+        <div id="form-scanner" class="form-pop hidden">
+            <h3 id="txt-lote-det" style="margin:0 0 10px 0;">Lote: --</h3>
+            <div id="dynamic-fields"></div>
+            <button class="btn-action" style="background:var(--d);" onclick="cerrarScanner()">CANCELAR</button>
+        </div>
     </div>
 
 <script>
-    let appData = { pedido: "", modo: "", lotes: [] };
-    let loteActual = null;
+    let app = { pedido: "", modo: "", lotes: [], flash: false };
+    let track = null; // Para la linterna
 
-    function setModo(m) {
-        const ped = document.getElementById('input-pedido-id').value;
-        if(!ped) return alert("Ingrese el pedido");
-        appData.pedido = ped;
-        appData.modo = m;
-        document.getElementById('display-pedido').innerText = ped;
+    function entrarApp(m) {
+        const p = document.getElementById('inp-pedido').value;
+        if(!p) return alert("Escribe el Pedido");
+        app.pedido = p;
+        app.modo = m;
+        document.getElementById('txt-pedido').innerText = p;
         document.getElementById('screen-intro').classList.add('hidden');
         document.getElementById('screen-main').classList.remove('hidden');
     }
 
     function abrirScanner() {
-        document.getElementById('overlay-flujo').classList.remove('hidden');
-        // Simulación de detección para este ejemplo (En producción usar Quagga)
-        setTimeout(() => { 
-            const mockCode = "LOTE-" + Math.floor(Math.random()*1000);
-            procesarDeteccion(mockCode);
-        }, 1000);
+        document.getElementById('overlay-scanner').classList.remove('hidden');
+        document.getElementById('form-scanner').classList.add('hidden');
+        
+        Quagga.init({
+            inputStream: { name: "Live", type: "LiveStream", target: document.querySelector('#interactive'), constraints: { facingMode: "environment" } },
+            decoder: { readers: ["code_128_reader", "ean_reader"] }
+        }, (err) => {
+            if (err) return alert("Error cámara: " + err);
+            Quagga.start();
+            // Obtener track para la linterna
+            setTimeout(() => {
+                const video = document.querySelector('video');
+                if(video.srcObject) track = video.srcObject.getVideoTracks()[0];
+            }, 1000);
+        });
     }
 
-    function procesarDeteccion(codigo) {
-        loteActual = codigo;
-        document.getElementById('flow-title').innerText = "Lote: " + codigo;
-        const container = document.getElementById('form-content');
-        
-        if(appData.modo === 'rapido') {
-            container.innerHTML = `
-                <label>Cant. Estándar</label><input type="number" id="f-est">
-                <label>Cajas Completas</label><input type="number" id="f-com">
-                <label>Parcial</label><input type="number" id="f-par">
-                <button class="btn-block" style="background:var(--p); color:white;" onclick="guardarLoteRapido()">GUARDAR</button>
+    Quagga.onDetected((res) => {
+        const code = res.codeResult.code;
+        Quagga.stop();
+        mostrarFormulario(code);
+    });
+
+    function mostrarFormulario(code) {
+        document.getElementById('txt-lote-det').innerText = "Lote: " + code;
+        const fields = document.getElementById('dynamic-fields');
+        document.getElementById('form-scanner').classList.remove('hidden');
+
+        if(app.modo === 'rapido') {
+            fields.innerHTML = `
+                <input type="number" id="val-est" placeholder="Cantidad Estándar">
+                <input type="number" id="val-com" placeholder="Cajas Completas">
+                <input type="number" id="val-par" placeholder="Unidades Parcial">
+                <button class="btn-action" style="background:var(--p);" onclick="save('rapido','${code}')">GUARDAR LOTE</button>
             `;
         } else {
-            // Modo Uno a Uno (Paso 2 del dibujo)
-            container.innerHTML = `
-                <label>Cantidad Parcial</label><input type="number" id="f-par">
-                <button class="btn-block" style="background:var(--s); color:white;" onclick="registrarUno(true)">CAJA COMPLETA</button>
-                <button class="btn-block" style="background:var(--p); color:white;" onclick="registrarUno(false)">GUARDAR PARCIAL</button>
+            fields.innerHTML = `
+                <input type="number" id="val-par" placeholder="Unidades Parcial">
+                <button class="btn-action" style="background:var(--s);" onclick="save('uno-uno-full','${code}')">CAJA COMPLETA</button>
+                <button class="btn-action" style="background:var(--p);" onclick="save('uno-uno-par','${code}')">GUARDAR PARCIAL</button>
             `;
         }
     }
 
-    function guardarLoteRapido() {
-        const est = document.getElementById('f-est').value;
-        const com = document.getElementById('f-com').value;
-        const par = document.getElementById('f-par').value;
-        appData.lotes.push({ id: loteActual, est, com, par });
-        actualizarLista();
+    function save(tipo, code) {
+        let registro = { id: code, com: 0, par: 0 };
+        if(tipo === 'rapido') {
+            registro.com = document.getElementById('val-com').value;
+            registro.par = document.getElementById('val-par').value;
+        } else if(tipo === 'uno-uno-full') {
+            registro.com = 1;
+        } else {
+            registro.par = document.getElementById('val-par').value;
+        }
+        
+        app.lotes.push(registro);
+        renderLista();
         cerrarScanner();
     }
 
-    function registrarUno(esCompleto) {
-        // Lógica para modo uno a uno
-        const par = document.getElementById('f-par').value || 0;
-        appData.lotes.push({ id: loteActual, est: "--", com: esCompleto ? 1 : 0, par: esCompleto ? 0 : par });
-        actualizarLista();
-        cerrarScanner();
-    }
-
-    function actualizarLista() {
-        const lista = document.getElementById('lista-lotes');
-        lista.innerHTML = appData.lotes.map((l, index) => `
+    function renderLista() {
+        const container = document.getElementById('container-lotes');
+        container.innerHTML = app.lotes.map((l, i) => `
             <div class="lote-item">
-                <b>${l.id}</b> <br>
-                <small>Cajas completas:</small> 
-                <select onchange="updateLote(${index}, 'com', this.value)">
-                    ${[0,1,2,3,4,5,10,20].map(v => `<option value="${v}" ${l.com == v ? 'selected' : ''}>${v}</option>`).join('')}
-                </select>
-                <br>
-                <small>Unidades parcial:</small> <input type="number" value="${l.par}" style="width:60px; padding:5px; margin:0;" onchange="updateLote(${index}, 'par', this.value)">
+                <b>${l.id}</b><br>
+                <div style="display:flex; align-items:center; gap:10px; margin-top:5px;">
+                    <small>Cajas:</small>
+                    <select onchange="app.lotes[${i}].com = this.value">
+                        ${[0,1,2,3,4,5,10,20].map(v => `<option value="${v}" ${l.com==v?'selected':''}>${v}</option>`).join('')}
+                    </select>
+                    <small>Parcial:</small>
+                    <input type="number" value="${l.par}" style="width:60px; margin:0;" onchange="app.lotes[${i}].par = this.value">
+                </div>
             </div>
         `).join('');
     }
 
-    function updateLote(index, campo, valor) {
-        appData.lotes[index][campo] = valor;
+    function toggleFlash() {
+        if(!track) return;
+        app.flash = !app.flash;
+        track.applyConstraints({ advanced: [{ torch: app.flash }] });
     }
 
     function cerrarScanner() {
-        document.getElementById('overlay-flujo').classList.add('hidden');
-    }
-
-    function descargarCSV() {
-        let csv = "Pedido,Lote,Estándar,Completas,Parcial\n";
-        appData.lotes.forEach(l => {
-            csv += `${appData.pedido},${l.id},${l.est},${l.com},${l.par}\n`;
-        });
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `Pedido_${appData.pedido}.csv`;
-        a.click();
+        Quagga.stop();
+        document.getElementById('overlay-scanner').classList.add('hidden');
     }
 </script>
 </body>
