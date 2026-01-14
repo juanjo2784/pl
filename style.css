@@ -67,3 +67,36 @@
         /* FORM POPUP */
         .form-pop { background: white; padding: 20px; border-radius: 15px 15px 0 0; position: absolute; bottom: 0; width: 100%; z-index: 2100; box-sizing: border-box; }
         .btn-action { width: 100%; padding: 14px; border: none; border-radius: 8px; color: white; font-weight: bold; margin-top: 8px; font-size: 16px; }
+
+        /* Estilos para el selector de iconos */
+.icon-selector {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin: 15px 0;
+    background: #f8f9fa;
+    padding: 10px;
+    border-radius: 8px;
+}
+
+.icon-option {
+    font-size: 24px;
+    padding: 10px;
+    text-align: center;
+    border: 2px solid transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    background: white;
+}
+
+.icon-option.selected {
+    border-color: var(--s);
+    background: #e7f3ff;
+    color: var(--s);
+}
+
+/* Icono en la lista principal */
+.lote-type-icon {
+    margin-right: 8px;
+    color: #555;
+}
