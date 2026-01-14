@@ -47,38 +47,62 @@ function mostrarFormulario(code) {
     const fields = document.getElementById('dynamic-fields');
     const est = app.memoriaEstandar[code] || "";
 
-    if(!est) {
-        // PRIMERA VEZ: Definir estándar e Icono
+    // Selector de iconos común para ambos modos
+    const htmlIconos = `
+        <label style="display:block; font-size:12px; color:#666; margin-top:10px;">TIPO DE PRODUCTO</label>
+        <div class="icon-selector">
+            <div class="icon-option selected" onclick="selectIcon(this, 'fa-box')"><i class="fas fa-box"></i></div>
+            <div class="icon-option" onclick="selectIcon(this, 'fa-file-alt')"><i class="fas fa-file-alt"></i></div>
+            <div class="icon-option" onclick="selectIcon(this, 'fa-tags')"><i class="fas fa-tags"></i></div>
+            <div class="icon-option" onclick="selectIcon(this, 'fa-shield-alt')"><i class="fas fa-shield-alt"></i></div>
+            <div class="icon-option" onclick="selectIcon(this, 'fa-archive')"><i class="fas fa-archive"></i></div>
+            <div class="icon-option" onclick="selectIcon(this, 'fa-cube')"><i class="fas fa-cube"></i></div>
+            <div class="icon-option" onclick="selectIcon(this, 'fa-shapes')"><i class="fas fa-shapes"></i></div>
+            <div class="icon-option" onclick="selectIcon(this, 'fa-folder')"><i class="fas fa-folder"></i></div>
+        </div>
+    `;
+
+    if(app.modo === 'rapido') {
+        // MODO RÁPIDO con Iconos
         fields.innerHTML = `
-            <label>Tipo de producto:</label>
-            <div class="icon-selector">
-                <div class="icon-option selected" onclick="selectIcon(this, 'fa-box')" title="Caja"><i class="fas fa-box"></i></div>
-                <div class="icon-option" onclick="selectIcon(this, 'fa-file-alt')" title="Folleto"><i class="fas fa-file-alt"></i></div>
-                <div class="icon-option" onclick="selectIcon(this, 'fa-tags')" title="Etiqueta"><i class="fas fa-tags"></i></div>
-                <div class="icon-option" onclick="selectIcon(this, 'fa-shield-alt')" title="Seguridad"><i class="fas fa-shield-alt"></i></div>
-                <div class="icon-option" onclick="selectIcon(this, 'fa-archive')" title="Cartón"><i class="fas fa-archive"></i></div>
-                <div class="icon-option" onclick="selectIcon(this, 'fa-cube')" title="Otro 1"><i class="fas fa-cube"></i></div>
-                <div class="icon-option" onclick="selectIcon(this, 'fa-shapes')" title="Otro 2"><i class="fas fa-shapes"></i></div>
-                <div class="icon-option" onclick="selectIcon(this, 'fa-folder')" title="Otro 3"><i class="fas fa-folder"></i></div>
+            ${!est ? htmlIconos : ''}
+            <label style="display:block; font-size:12px; color:#666; margin-top:10px;">ESTÁNDAR</label>
+            <input type="number" id="f-est" value="${est}" style="width:100%; padding:10px; margin-bottom:10px;">
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <div>
+                    <label style="display:block; font-size:12px; color:#666;">CAJAS</label>
+                    <input type="number" id="f-com" placeholder="0" style="width:100%; padding:10px;">
+                </div>
+                <div>
+                    <label style="display:block; font-size:12px; color:#666;">PARCIAL</label>
+                    <input type="number" id="f-par" placeholder="0" style="width:100%; padding:10px;">
+                </div>
             </div>
-            <label>Cantidad estándar:</label>
-            <input type="number" id="f-est" placeholder="Ej: 12" style="width:100%; padding:10px; margin-top:5px;">
-            <button class="btn-action" style="background:var(--s); width:100%; color:white; padding:15px; border:none; border-radius:8px; margin-top:10px;" onclick="definirEst('${code}')">CONTINUAR</button>
+            <button class="btn-action" style="background:var(--p); width:100%; color:white; padding:15px; border:none; border-radius:8px; margin-top:15px;" onclick="finalizarRegistro('${code}')">GUARDAR TODO</button>
         `;
     } else {
-        // YA EXISTE: Flujo normal de suma
-        const iconClass = app.lotes.find(l => l.id === code)?.icon || "fa-box";
-        fields.innerHTML = `
-            <div style="background:#e7f3ff; padding:10px; border-radius:8px; margin-bottom:15px; text-align:center;">
-                <i class="fas ${iconClass} fa-2x"></i><br>
-                Estándar: <b>${est}</b>
-            </div>
-            <input type="number" id="f-par" placeholder="Unidades Parciales" style="width:100%; padding:10px; margin-bottom:15px; font-size:18px; text-align:center;">
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                <button class="btn-action" style="background:var(--s); color:white; padding:15px; border:none; border-radius:8px;" onclick="finalizarRegistro('${code}', 1, 0)">+1 CAJA</button>
-                <button class="btn-action" style="background:var(--p); color:white; padding:15px; border:none; border-radius:8px;" onclick="finalizarRegistro('${code}', 0, undefined)">PARCIAL</button>
-            </div>
-        `;
+        // MODO UNO A UNO (DINÁMICO)
+        if(!est) {
+            fields.innerHTML = `
+                ${htmlIconos}
+                <label>Cantidad estándar:</label>
+                <input type="number" id="f-est" placeholder="Ej: 12" style="width:100%; padding:10px; margin-top:5px;">
+                <button class="btn-action" style="background:var(--s); width:100%; color:white; padding:15px; border:none; border-radius:8px; margin-top:10px;" onclick="definirEst('${code}')">CONTINUAR</button>
+            `;
+        } else {
+            const iconClass = app.lotes.find(l => l.id === code)?.icon || "fa-box";
+            fields.innerHTML = `
+                <div style="background:#e7f3ff; padding:10px; border-radius:8px; margin-bottom:15px; text-align:center;">
+                    <i class="fas ${iconClass} fa-2x"></i><br>
+                    Estándar: <b>${est}</b>
+                </div>
+                <input type="number" id="f-par" placeholder="Unidades Parciales" style="width:100%; padding:10px; margin-bottom:15px; font-size:18px; text-align:center;">
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                    <button class="btn-action" style="background:var(--s); color:white; padding:15px; border:none; border-radius:8px;" onclick="finalizarRegistro('${code}', 1, 0)">+1 CAJA</button>
+                    <button class="btn-action" style="background:var(--p); color:white; padding:15px; border:none; border-radius:8px;" onclick="finalizarRegistro('${code}', 0, undefined)">PARCIAL</button>
+                </div>
+            `;
+        }
     }
 }
 
@@ -106,12 +130,23 @@ function definirEst(code) {
 
 // Modificación en finalizarRegistro para incluir el icono
 function finalizarRegistro(code, cNominal, pNominal) {
-    const est = app.memoriaEstandar[code];
+    // Intentar obtener estándar del input o de la memoria
+    const inputEst = document.getElementById('f-est');
+    const est = app.memoriaEstandar[code] || (inputEst ? parseInt(inputEst.value) : 0);
+
+    if(!est) return alert("Debe definir un estándar");
+
+    // Guardar estándar e icono en memoria si es la primera vez
+    if(!app.memoriaEstandar[code]) {
+        app.memoriaEstandar[code] = est;
+        app.memoriaEstandar[code + "_icon"] = iconoSeleccionado;
+    }
+
     const icon = app.memoriaEstandar[code + "_icon"] || "fa-box";
     let com = cNominal !== undefined ? cNominal : (parseInt(document.getElementById('f-com')?.value) || 0);
     let par = pNominal !== undefined ? pNominal : (parseInt(document.getElementById('f-par')?.value) || 0);
 
-    if (par >= est) return alert("Parcial excede estándar");
+    if (par >= est) return alert("El parcial no puede ser mayor o igual al estándar");
 
     const idx = app.lotes.findIndex(l => l.id === code);
     if (idx !== -1) {
@@ -125,8 +160,11 @@ function finalizarRegistro(code, cNominal, pNominal) {
     } else {
         app.lotes.unshift({ id: code, est: est, com: com, par: par, icon: icon, updated: false });
     }
+    
     actualizarLista();
     cerrarEscaner();
+    // Resetear icono por defecto para el siguiente lote nuevo
+    iconoSeleccionado = "fa-box"; 
 }
 
 function actualizarLista() {
