@@ -41,19 +41,37 @@ function mostrarFormulario(code) {
     const est = app.memoriaEstandar[code] || "";
 
     if(app.modo === 'rapido') {
+        // MODO RÁPIDO: Pide todo de una vez
         fields.innerHTML = `
-            <input type="number" id="f-est" value="${est}" placeholder="Estándar">
-            <input type="number" id="f-com" placeholder="Cajas">
-            <input type="number" id="f-par" placeholder="Parcial">
-            <button class="btn-action" style="background:var(--p); width:100%; color:white; padding:10px;" onclick="finalizarRegistro('${code}')">GUARDAR</button>
+            <label style="display:block; font-size:12px; color:#666; margin-top:10px;">ESTÁNDAR</label>
+            <input type="number" id="f-est" value="${est}" style="width:100%; padding:10px; margin-bottom:10px;">
+            <label style="display:block; font-size:12px; color:#666;">CAJAS COMPLETAS</label>
+            <input type="number" id="f-com" placeholder="0" style="width:100%; padding:10px; margin-bottom:10px;">
+            <label style="display:block; font-size:12px; color:#666;">UNIDADES PARCIALES</label>
+            <input type="number" id="f-par" placeholder="0" style="width:100%; padding:10px; margin-bottom:10px;">
+            <button class="btn-action" style="background:var(--p); width:100%; color:white; padding:15px; border:none; border-radius:8px;" onclick="finalizarRegistro('${code}')">GUARDAR TODO</button>
         `;
     } else {
-        // Lógica Dinámica
+        // MODO UNO A UNO (DINÁMICO)
         if(!est) {
-            fields.innerHTML = `<input type="number" id="f-est" placeholder="Definir Estándar">
-                                <button onclick="definirEst('${code}')">OK</button>`;
+            fields.innerHTML = `
+                <label>Define el estándar para este nuevo lote:</label>
+                <input type="number" id="f-est" placeholder="Ej: 12" style="width:100%; padding:10px; margin-top:10px;">
+                <button class="btn-action" style="background:var(--s); width:100%; color:white; padding:15px; border:none; border-radius:8px; margin-top:10px;" onclick="definirEst('${code}')">CONTINUAR</button>
+            `;
         } else {
-            fields.innerHTML = `<button class="btn-action" style="background:var(--s); width:100%; color:white; padding:10px;" onclick="finalizarRegistro('${code}', 1, 0)">+1 CAJA COMPLETA</button>`;
+            fields.innerHTML = `
+                <div style="background:#e7f3ff; padding:10px; border-radius:8px; margin-bottom:15px; font-size:14px;">
+                    Lote con estándar: <b>${est}</b>
+                </div>
+                <label style="display:block; font-size:12px; color:#666;">¿AGREGAR UNIDADES PARCIALES?</label>
+                <input type="number" id="f-par" placeholder="0" style="width:100%; padding:10px; margin-bottom:15px; font-size:18px; text-align:center;">
+                
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                    <button class="btn-action" style="background:var(--s); color:white; padding:15px; border:none; border-radius:8px;" onclick="finalizarRegistro('${code}', 1, 0)">+1 CAJA<br>COMPLETA</button>
+                    <button class="btn-action" style="background:var(--p); color:white; padding:15px; border:none; border-radius:8px;" onclick="finalizarRegistro('${code}', 0, undefined)">SUMAR<br>PARCIAL</button>
+                </div>
+            `;
         }
     }
 }
@@ -64,25 +82,32 @@ function definirEst(code) {
 }
 
 function finalizarRegistro(code, cNominal, pNominal) {
-    const est = app.memoriaEstandar[code] || parseInt(document.getElementById('f-est').value);
-    const com = cNominal !== undefined ? cNominal : (parseInt(document.getElementById('f-com').value) || 0);
-    const par = pNominal !== undefined ? pNominal : (parseInt(document.getElementById('f-par').value) || 0);
+    const est = app.memoriaEstandar[code];
+    
+    // Si pNominal es undefined, significa que viene del botón "Sumar Parcial" y debe leer el input
+    let com = cNominal !== undefined ? cNominal : 0;
+    let par = pNominal !== undefined ? pNominal : (parseInt(document.getElementById('f-par').value) || 0);
 
-    app.memoriaEstandar[code] = est;
+    if (par >= est) {
+        alert("Error: El parcial (" + par + ") no puede ser mayor o igual al estándar (" + est + ")");
+        return;
+    }
+
     const idx = app.lotes.findIndex(l => l.id === code);
 
     if (idx !== -1) {
-        // ACUMULAR EN LOTE EXISTENTE
+        // ACUMULAR
         app.lotes[idx].com += com;
         app.lotes[idx].par += par;
-        // Ajustar si el parcial completa una caja
+
+        // Si la suma de parciales completa una caja nueva
         if (app.lotes[idx].par >= est) {
             app.lotes[idx].com += Math.floor(app.lotes[idx].par / est);
             app.lotes[idx].par = app.lotes[idx].par % est;
         }
-        app.lotes[idx].updated = true; // Flag para animación
+        app.lotes[idx].updated = true;
     } else {
-        // NUEVO REGISTRO
+        // NUEVO
         app.lotes.unshift({ id: code, est, com, par, updated: false });
     }
 
