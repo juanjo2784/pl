@@ -3,222 +3,166 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <link rel="manifest" href="manifest.json">
-    <title>Scanner PL Pro v5</title>
-    <script src="html5-qrcode.min.js"></script>
+    <title>Scanner App - Flujo Dibujo</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
     <style>
-        :root { --primary: #007bff; --success: #28a745; --error: #dc3545; --warning: #fd7e14; --dark: #2c3e50; --light: #f4f7f6; }
-        body { font-family: sans-serif; background: var(--light); margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        :root { --p: #28a745; --s: #007bff; --d: #dc3545; --dark: #212529; }
+        body { font-family: sans-serif; margin: 0; background: #f4f4f4; }
+        .hidden { display: none !important; }
         
-        #scanner-container { width: 100%; background: #000; height: 25vh; position: relative; flex-shrink: 0; z-index: 1; }
-        #reader { width: 100% !important; height: 100% !important; }
+        /* Pantallas */
+        .screen { display: flex; flex-direction: column; height: 100vh; padding: 20px; box-sizing: border-box; }
         
-        .controls { position: relative; background: white; padding: 10px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); z-index: 10; flex-shrink: 0; border-bottom: 1px solid #ddd; }
-        .btn-scan { width: 65px; height: 65px; border-radius: 50%; border: 5px solid #eef2f7; background: var(--success); color: white; font-size: 1.5rem; cursor: pointer; margin-bottom: 5px; }
+        /* Intro */
+        .intro-card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-align: center; margin: auto; width: 100%; max-width: 400px; }
         
-        .list-container { flex: 1; overflow-y: auto; padding: 10px; background: var(--light); position: relative; z-index: 5; }
+        /* Ventana Principal */
+        .header-pedido { background: var(--dark); color: white; padding: 15px; border-radius: 10px; margin-bottom: 10px; }
+        .lote-item { background: white; padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 5px solid var(--s); position: relative; }
         
-        .card { background: white; padding: 12px; border-radius: 10px; margin-bottom: 10px; display: flex; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-left: 5px solid var(--primary); }
-        .card-order { border-left-color: var(--dark); background: #e9ecef; }
+        /* Botones Flotantes Inferiores (Como en tu dibujo) */
+        .nav-footer { position: fixed; bottom: 20px; left: 0; right: 0; display: flex; justify-content: space-around; padding: 0 20px; }
+        .round-btn { width: 60px; height: 60px; border-radius: 50%; border: none; color: white; font-size: 24px; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
         
-        .card-info { flex: 1; min-width: 0; }
-        .lote-header { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
-        .lote-text { font-weight: bold; font-size: 1.1rem; color: var(--dark); }
-        
-        .box-badge { background: var(--warning); color: white; padding: 2px 8px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; box-shadow: 0 2px 4px rgba(253, 126, 20, 0.3); }
-        .qty-badge { background: var(--primary); color: white; padding: 6px 12px; border-radius: 20px; font-weight: bold; font-size: 0.9rem; margin-right: 8px; }
-        
-        .btn-icon { background: none; border: none; font-size: 1.3rem; cursor: pointer; padding: 5px; }
-
-        .panel { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 85%; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); z-index: 4000; display: none; text-align: center; }
-        .panel input { width: 100%; padding: 12px; margin: 10px 0; font-size: 1.2rem; text-align: center; border: 2px solid #ddd; border-radius: 8px; box-sizing: border-box;}
-        .btn-block { width: 100%; padding: 15px; margin-top: 10px; border: none; border-radius: 8px; font-weight: bold; color: white; }
-        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 3500; display: none; }
+        /* Formulario Flujo */
+        .form-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); color: white; padding: 20px; z-index: 100; }
+        input, select { width: 100%; padding: 15px; margin: 10px 0; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; }
+        .btn-block { width: 100%; padding: 15px; border: none; border-radius: 8px; font-weight: bold; margin-top: 10px; }
     </style>
 </head>
 <body>
 
-    <div id="scanner-container"><div id="reader"></div></div>
-    
-    <div class="controls">
-        <button class="btn-scan" id="btn-read" onclick="activarEscaneo()">📸</button>
-        <div style="display: flex; justify-content: space-around; font-size: 0.8rem; font-weight: bold;">
-            <div onclick="exportarCSV()" style="color: var(--primary); cursor:pointer;">📥 EXPORTAR</div>
-            <div onclick="toggleTorch()" style="color: var(--dark); cursor:pointer;">⚡ LINTERNA</div>
-            <div onclick="borrarTodo()" style="color: var(--error); cursor:pointer;">🗑️ LIMPIAR</div>
+    <div id="screen-intro" class="screen">
+        <div class="intro-card">
+            <h2>Pedido</h2>
+            <input type="text" id="input-pedido-id" placeholder="Ingrese ID Pedido">
+            <button class="btn-block" style="background: var(--s); color: white;" onclick="setModo('rapido')">TRABAJO RÁPIDO</button>
+            <button class="btn-block" style="background: var(--dark); color: white;" onclick="setModo('uno-a-uno')">UNO A UNO</button>
         </div>
     </div>
 
-    <div class="list-container" id="lista-escaneos"></div>
-    <div class="overlay" id="overlay"></div>
-    
-    <div id="panel-pedido" class="panel">
-        <h3>ID DEL PEDIDO</h3>
-        <input type="text" id="in-pedido" placeholder="Ingrese ID">
-        <button class="btn-block" style="background:var(--success)" onclick="guardarPedido()">COMENZAR</button>
-    </div>
-
-    <div id="panel-tipo" class="panel">
-        <h3 id="lbl-lote-actual"></h3>
-        <button class="btn-block" style="background:var(--primary)" onclick="clickEntradaCompleta()">📦 CAJA COMPLETA</button>
-        <button class="btn-block" style="background:var(--dark)" onclick="lanzarEntradaParcial()">📥 CAJA PARCIAL</button>
-        <button class="btn-block" style="background:none; color:var(--error)" onclick="cerrarTodo()">CANCELAR</button>
-    </div>
-
-    <div id="panel-datos" class="panel">
-        <h3 id="lbl-modo"></h3>
-        <p id="lbl-instruccion"></p>
-        <input type="number" id="in-valor" inputmode="numeric">
-        <button class="btn-block" style="background:var(--success)" onclick="procesarGuardado()">CONFIRMAR</button>
-    </div>
-
-    <script>
-        let memoria = JSON.parse(localStorage.getItem('inv_v21_final')) || {};
-        let idPedido = localStorage.getItem('id_pedido_actual') || "";
-        let loteActual = "", modoActual = "", scanner = null, leerAhora = false, torchOn = false;
-
-        async function iniciarApp() {
-            scanner = new Html5Qrcode("reader");
-            await scanner.start({ facingMode: "environment" }, { fps: 20, qrbox: { width: 220, height: 120 } }, (text) => {
-                if(leerAhora) {
-                    leerAhora = false;
-                    loteActual = text;
-                    abrirValidacion();
-                }
-            });
-            if(!idPedido) {
-                document.getElementById('overlay').style.display = 'block';
-                document.getElementById('panel-pedido').style.display = 'block';
-            }
-            dibujarLista();
-        }
-
-        function activarEscaneo() {
-            leerAhora = true;
-            document.getElementById('btn-read').style.background = "#ffc107";
-        }
-
-        function guardarPedido() {
-            let val = document.getElementById('in-pedido').value.trim();
-            if(val) { idPedido = val; localStorage.setItem('id_pedido_actual', idPedido); cerrarTodo(); dibujarLista(); }
-        }
-
-        function abrirValidacion() {
-            document.getElementById('btn-read').style.background = "var(--success)";
-            document.getElementById('overlay').style.display = 'block';
-            document.getElementById('panel-tipo').style.display = 'block';
-            document.getElementById('lbl-lote-actual').innerText = "Lote: " + loteActual;
-        }
-
-        function clickEntradaCompleta() {
-            if (memoria[loteActual] && memoria[loteActual].std > 0) {
-                modoActual = "sumar_cajas";
-                mostrarPanelDatos("Añadir Cajas", "Cajas de " + memoria[loteActual].std, "1");
-            } else {
-                modoActual = "definir_estandar";
-                mostrarPanelDatos("Nuevo Estándar", "Unidades por caja", "");
-            }
-        }
-
-        function lanzarEntradaParcial() {
-            modoActual = "parcial";
-            mostrarPanelDatos("Caja Parcial", "Unidades sueltas", "");
-        }
-
-        function mostrarPanelDatos(titulo, instruccion, valorDefecto) {
-            document.getElementById('panel-tipo').style.display = 'none';
-            document.getElementById('panel-datos').style.display = 'block';
-            document.getElementById('lbl-modo').innerText = titulo;
-            document.getElementById('lbl-instruccion').innerText = instruccion;
-            document.getElementById('in-valor').value = valorDefecto;
-        }
-
-        function procesarGuardado() {
-            const v = parseInt(document.getElementById('in-valor').value);
-            if(isNaN(v) || v < 0) return;
-            if(!memoria[loteActual]) memoria[loteActual] = { std: 0, cajas: 0, parcial: 0 };
-            if(modoActual === "definir_estandar") { memoria[loteActual].std = v; memoria[loteActual].cajas = 1; }
-            else if(modoActual === "sumar_cajas") { memoria[loteActual].cajas += v; }
-            else if(modoActual === "parcial") { memoria[loteActual].parcial += v; }
-            guardarYRefrescar();
-            cerrarTodo();
-        }
-
-        function guardarYRefrescar() {
-            localStorage.setItem('inv_v21_final', JSON.stringify(memoria));
-            dibujarLista();
-        }
-
-        function dibujarLista() {
-            const lista = document.getElementById('lista-escaneos');
-            lista.innerHTML = "";
-            
-            if(idPedido) {
-                lista.innerHTML += `
-                    <div class="card card-order">
-                        <div class="card-info"><b>PEDIDO: ${idPedido}</b></div>
-                        <button class="btn-icon" onclick="preguntarCambioPedido()">📝</button>
-                    </div>`;
-            }
-
-            Object.keys(memoria).reverse().forEach(l => {
-                const m = memoria[l];
-                const totalU = (m.cajas * m.std) + m.parcial;
-                
-                // LÓGICA DE CONTEO DE CAJAS SOLICITADA
-                // Si hay parciales, se cuenta como una caja adicional (caja abierta)
-                const bultosTotales = m.parcial > 0 ? (m.cajas + 1) : m.cajas;
-
-                lista.innerHTML += `
-                    <div class="card">
-                        <div class="card-info">
-                            <div class="lote-header">
-                                <span class="lote-text">${l}</span>
-                                <span class="box-badge">${bultosTotales} CJ</span>
-                            </div>
-                            <small>${m.cajas} completas + ${m.parcial} u. sueltas</small>
-                        </div>
-                        <div class="qty-badge">${totalU} u.</div>
-                        <button class="btn-icon" onclick="eliminarLote('${l}')">🗑️</button>
-                    </div>`;
-            });
-        }
-
-        function preguntarCambioPedido() {
-            document.getElementById('overlay').style.display = 'block';
-            document.getElementById('panel-pedido').style.display = 'block';
-        }
-
-        function eliminarLote(l) { if(confirm("¿Eliminar lote " + l + "?")) { delete memoria[l]; guardarYRefrescar(); } }
-        function borrarTodo() { if(confirm("¿Limpiar lista?")) { memoria = {}; guardarYRefrescar(); } }
+    <div id="screen-main" class="screen hidden">
+        <div class="header-pedido">
+            <b>Pedido:</b> <span id="display-pedido">--</span>
+        </div>
         
-        function cerrarTodo() { 
-            document.getElementById('overlay').style.display = 'none';
-            document.getElementById('panel-tipo').style.display = 'none'; 
-            document.getElementById('panel-datos').style.display = 'none';
-            document.getElementById('panel-pedido').style.display = 'none';
-            leerAhora = false;
-            document.getElementById('btn-read').style.background = "var(--success)";
-        }
+        <div id="lista-lotes" style="flex: 1; overflow-y: auto;">
+            </div>
 
-        function toggleTorch() {
-            torchOn = !torchOn;
-            scanner.applyVideoConstraints({ advanced: [{ torch: torchOn }] }).catch(e => alert("No disponible"));
-        }
+        <div class="nav-footer">
+            <button class="round-btn" style="background: var(--d);" onclick="location.reload()">X</button>
+            <button class="round-btn" style="background: var(--p);" onclick="abrirScanner()">SCAN</button>
+            <button class="round-btn" style="background: var(--s);" onclick="descargarCSV()">💾</button>
+        </div>
+    </div>
 
-        function exportarCSV() {
-            let csv = "Pedido: " + idPedido + "\nLote,Std,Cajas_Completas,Cajas_Parciales,Total_Unidades\n";
-            for(let l in memoria) {
-                const m = memoria[l];
-                csv += `${l},${m.std},${m.cajas},${m.parcial},${(m.cajas*m.std)+m.parcial}\n`;
-            }
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const link = document.createElement("a");
-            link.href = URL.createObjectURL(blob);
-            link.download = `Pedido_${idPedido}.csv`;
-            link.click();
+    <div id="overlay-flujo" class="form-overlay hidden">
+        <div id="scanner-view" style="height: 200px; background: #000; margin-bottom: 15px;"></div>
+        
+        <h3 id="flow-title">Lote: --</h3>
+        
+        <div id="form-content">
+            </div>
+        
+        <button class="btn-block" style="background: var(--d); color: white;" onclick="cerrarScanner()">CANCELAR</button>
+    </div>
+
+<script>
+    let appData = { pedido: "", modo: "", lotes: [] };
+    let loteActual = null;
+
+    function setModo(m) {
+        const ped = document.getElementById('input-pedido-id').value;
+        if(!ped) return alert("Ingrese el pedido");
+        appData.pedido = ped;
+        appData.modo = m;
+        document.getElementById('display-pedido').innerText = ped;
+        document.getElementById('screen-intro').classList.add('hidden');
+        document.getElementById('screen-main').classList.remove('hidden');
+    }
+
+    function abrirScanner() {
+        document.getElementById('overlay-flujo').classList.remove('hidden');
+        // Simulación de detección para este ejemplo (En producción usar Quagga)
+        setTimeout(() => { 
+            const mockCode = "LOTE-" + Math.floor(Math.random()*1000);
+            procesarDeteccion(mockCode);
+        }, 1000);
+    }
+
+    function procesarDeteccion(codigo) {
+        loteActual = codigo;
+        document.getElementById('flow-title').innerText = "Lote: " + codigo;
+        const container = document.getElementById('form-content');
+        
+        if(appData.modo === 'rapido') {
+            container.innerHTML = `
+                <label>Cant. Estándar</label><input type="number" id="f-est">
+                <label>Cajas Completas</label><input type="number" id="f-com">
+                <label>Parcial</label><input type="number" id="f-par">
+                <button class="btn-block" style="background:var(--p); color:white;" onclick="guardarLoteRapido()">GUARDAR</button>
+            `;
+        } else {
+            // Modo Uno a Uno (Paso 2 del dibujo)
+            container.innerHTML = `
+                <label>Cantidad Parcial</label><input type="number" id="f-par">
+                <button class="btn-block" style="background:var(--s); color:white;" onclick="registrarUno(true)">CAJA COMPLETA</button>
+                <button class="btn-block" style="background:var(--p); color:white;" onclick="registrarUno(false)">GUARDAR PARCIAL</button>
+            `;
         }
-        window.onload = iniciarApp;
-    </script>
+    }
+
+    function guardarLoteRapido() {
+        const est = document.getElementById('f-est').value;
+        const com = document.getElementById('f-com').value;
+        const par = document.getElementById('f-par').value;
+        appData.lotes.push({ id: loteActual, est, com, par });
+        actualizarLista();
+        cerrarScanner();
+    }
+
+    function registrarUno(esCompleto) {
+        // Lógica para modo uno a uno
+        const par = document.getElementById('f-par').value || 0;
+        appData.lotes.push({ id: loteActual, est: "--", com: esCompleto ? 1 : 0, par: esCompleto ? 0 : par });
+        actualizarLista();
+        cerrarScanner();
+    }
+
+    function actualizarLista() {
+        const lista = document.getElementById('lista-lotes');
+        lista.innerHTML = appData.lotes.map((l, index) => `
+            <div class="lote-item">
+                <b>${l.id}</b> <br>
+                <small>Cajas completas:</small> 
+                <select onchange="updateLote(${index}, 'com', this.value)">
+                    ${[0,1,2,3,4,5,10,20].map(v => `<option value="${v}" ${l.com == v ? 'selected' : ''}>${v}</option>`).join('')}
+                </select>
+                <br>
+                <small>Unidades parcial:</small> <input type="number" value="${l.par}" style="width:60px; padding:5px; margin:0;" onchange="updateLote(${index}, 'par', this.value)">
+            </div>
+        `).join('');
+    }
+
+    function updateLote(index, campo, valor) {
+        appData.lotes[index][campo] = valor;
+    }
+
+    function cerrarScanner() {
+        document.getElementById('overlay-flujo').classList.add('hidden');
+    }
+
+    function descargarCSV() {
+        let csv = "Pedido,Lote,Estándar,Completas,Parcial\n";
+        appData.lotes.forEach(l => {
+            csv += `${appData.pedido},${l.id},${l.est},${l.com},${l.par}\n`;
+        });
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `Pedido_${appData.pedido}.csv`;
+        a.click();
+    }
+</script>
 </body>
 </html>
