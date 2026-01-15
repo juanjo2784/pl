@@ -202,13 +202,37 @@ function eliminar(idx) {
 function cerrarEscaner() { Quagga.stop(); document.getElementById('overlay-scanner').classList.add('hidden'); }
 
 function descargarCSV() {
-    if(app.lotes.length === 0) return alert("אין נתונים");
-    let csv = "\uFEFFהזמנה, אצווה, כמות סטנדרטית, כמות ארגזים מלאים ,כמות יחידות ארגז חלקי ,סח''ה ארגזים, סה''כ יחידות\n";
+    if(app.lotes.length === 0) return alert("No hay datos para exportar");
+
+    // Encabezados claros para Excel
+    let csv = "\uFEFFPedido;Lote;Tipo;Estándar;Cajas Completas;Unidades Parciales;Total Cajas (Físicas);Total Unidades\n";
+
     app.lotes.forEach(l => {
-        csv += `${document.getElementById('txt-pedido').innerText},${l.id},${l.est},${l.com},${l.par},${totC},${(l.com*l.est)+l.par}\n`;
+        const unidadesTotales = (l.com * l.est) + l.par;
+        // totC: Cajas cerradas + 1 si hay sobrantes
+        const totalCajasFisicas = l.com + (l.par > 0 ? 1 : 0);
+        
+        // Buscamos el nombre del tipo según el icono para que el CSV sea legible
+        const tipoNombre = l.icon.replace('fa-', '').toUpperCase();
+
+        csv += `${document.getElementById('txt-pedido').innerText};` +
+               `${l.id};` +
+               `${tipoNombre};` +
+               `${l.est};` +
+               `${l.com};` +
+               `${l.par};` +
+               `${totalCajasFisicas};` + // Aquí incluimos totC
+               `${unidadesTotales}\n`;
     });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-    a.download = `הזמנה_${document.getElementById('txt-pedido').innerText}.csv`;
-    a.click();
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute("href", url);
+    link.setAttribute("download", `Carga_${document.getElementById('txt-pedido').innerText}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 }
