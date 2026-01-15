@@ -49,7 +49,7 @@ function procesarCapturaManual() {
 // --- FORMULARIO DINÁMICO ---
 function mostrarFormulario(code) {
     document.getElementById('form-scanner').classList.remove('hidden');
-    document.getElementById('txt-lote-det').innerText = "Lote: " + code;
+    document.getElementById('txt-lote-det').innerText = "הצווה: " + code;
     const fields = document.getElementById('dynamic-fields');
     const est = app.memoriaEstandar[code] || "";
 
@@ -205,7 +205,7 @@ function descargarCSV() {
     if(app.lotes.length === 0) return alert("No hay datos para exportar");
 
     // Encabezados claros para Excel
-    let csv = "\uFEFFPedido;Lote;Tipo;Estándar;Cajas Completas;Unidades Parciales;Total Cajas (Físicas);Total Unidades\n";
+    let csv = "\uFEFFהזמנה; אצווה; סטנדרטי; ארגזים מלאים; יחידות חלקיות; סה''כ ארגזים (פיזיים); סה''כ יחידות\n";
 
     app.lotes.forEach(l => {
         const unidadesTotales = (l.com * l.est) + l.par;
@@ -217,7 +217,6 @@ function descargarCSV() {
 
         csv += `${document.getElementById('txt-pedido').innerText};` +
                `${l.id};` +
-               `${tipoNombre};` +
                `${l.est};` +
                `${l.com};` +
                `${l.par};` +
