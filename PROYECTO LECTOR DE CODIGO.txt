@@ -31,3 +31,8 @@ ngrok http 5000
 
 en otra terminal: python3 app.py
 
+git config --global user.name "juanjo2784"
+git config --global user.email "juanjo.chavez2784@gmail.com"
+
+juanjo2784.github.io/pl/
+<link rel="manifest" href="manifest.json">
