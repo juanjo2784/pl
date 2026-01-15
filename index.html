@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Scanner Pro - High Speed</title>
+    <title>מלאי סורק Pro</title>
     <link rel="stylesheet" href="style.css">
     <script src="quagga.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
@@ -18,15 +18,15 @@
     <div id="screen-intro" style="padding: 20px; text-align: center; margin-top: 15vh;">
         <div style="background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
             <i class="fas fa-boxes fa-3x" style="color:var(--s); margin-bottom:15px;"></i>
-            <h2>Control de Carga</h2>
-            <input type="text" id="inp-pedido" placeholder="Referencia del Pedido">
-            <button class="btn-action" style="background:var(--s);" onclick="iniciarApp('rapido')">TRABAJO RÁPIDO</button>
-            <button class="btn-action" style="background:var(--dark);" onclick="iniciarApp('uno-a-uno')">UNO A UNO (DINÁMICO)</button>
+            <h2>זיהוי הזמנה</h2>
+            <input type="text" id="inp-pedido" placeholder="קוד הזמנה">
+            <button class="btn-action" style="background:var(--s);" onclick="iniciarApp('rapido')">עבודה מהירה</button>
+            <button class="btn-action" style="background:var(--dark);" onclick="iniciarApp('uno-a-uno')">אחד על אחד (דינמי)</button>
         </div>
     </div>
 
     <div id="screen-main" class="hidden">
-        <div class="header-pedido">PEDIDO: <span id="txt-pedido"></span></div>
+        <div class="header-pedido">הזמנה: <span id="txt-pedido"></span></div>
         <div class="list-container" id="container-lotes"></div>
         <div class="nav-footer">
             <button class="icon-btn" style="background:var(--d);" onclick="location.reload()"><i class="fas fa-sync-alt"></i></button>
@@ -39,7 +39,7 @@
         <div id="interactive">
             <div class="scanner-viewfinder"><div class="laser-line"></div></div>
             <button id="btn-confirm-capture" class="btn-capture-trigger hidden" onclick="procesarCapturaManual()">
-                <i class="fas fa-check"></i> CAPTURAR LOTE
+                <i class="fas fa-check"></i> סריקת אצווה
             </button>
             <button onclick="cerrarEscaner()" style="position:absolute; top:20px; left:20px; color:white; background:rgba(0,0,0,0.5); border:none; border-radius:50%; width:40px; height:40px; z-index:20;">
                 <i class="fas fa-arrow-left"></i>
@@ -47,9 +47,9 @@
         </div>
         
         <div id="form-scanner" class="form-pop hidden">
-            <h3 id="txt-lote-det" style="margin:0; color:var(--s);">Lote Detectado</h3>
+            <h3 id="txt-lote-det" style="margin:0; color:var(--s);">זוהתה אצווה</h3>
             <div id="dynamic-fields" style="margin-top:10px;"></div>
-            <button class="btn-action" style="background:var(--d); margin-top:15px;" onclick="cerrarEscaner()">CANCELAR</button>
+            <button class="btn-action" style="background:var(--d); margin-top:15px;" onclick="cerrarEscaner()">מבטל</button>
         </div>
     </div>
 </body>
