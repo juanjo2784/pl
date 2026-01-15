@@ -1,6 +1,6 @@
 {
-  "name": "Scanner Pro Inventario",
-  "short_name": "ScannerPro",
+  "name": "מלאי סורק INVENTARIO",
+  "short_name": "מלאי סורק",
   "start_url": "index.html",
   "display": "standalone",
   "background_color": "#212529",
