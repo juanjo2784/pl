@@ -203,7 +203,7 @@ function cerrarEscaner() { Quagga.stop(); document.getElementById('overlay-scann
 
 function descargarCSV() {
     if(app.lotes.length === 0) return alert("אין נתונים");
-    let csv = "\uFEFFהזמנה, אצווה, כמות סטנדרטית, כמות ארגזים מלאים, כמות יחידות ארגז חלקי,סח''ה ארגזים, סה''כ יחידות\n";
+    let csv = "\uFEFFהזמנה, אצווה, כמות סטנדרטית, כמות ארגזים מלאים ,כמות יחידות ארגז חלקי ,סח''ה ארגזים, סה''כ יחידות\n";
     app.lotes.forEach(l => {
         csv += `${document.getElementById('txt-pedido').innerText},${l.id},${l.est},${l.com},${l.par},${totC},${(l.com*l.est)+l.par}\n`;
     });
