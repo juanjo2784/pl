@@ -60,14 +60,14 @@ function mostrarFormulario(code) {
     const htmlIconos = `
         <label style="display:block; font-size:12px; color:#666; margin-top:10px;">סוג מוצר</label>
         <div class="icon-selector">
-            <div class="icon-option selected" onclick="selectIcon(this, 'fa-box', 'Caja')"><i class="fas fa-box"></i></div>
-            <div class="icon-option" onclick="selectIcon(this, 'fa-file-alt', 'Folleto')"><i class="fas fa-file-alt"></i></div>
-            <div class="icon-option" onclick="selectIcon(this, 'fa-tags', 'Etiqueta')"><i class="fas fa-tags"></i></div>
-            <div class="icon-option" onclick="selectIcon(this, 'fa-shield-alt', 'Seguridad')"><i class="fas fa-shield-alt"></i></div>
-            <div class="icon-option" onclick="selectIcon(this, 'fa-archive', 'Carton')"><i class="fas fa-archive"></i></div>
-            <div class="icon-option" onclick="selectIcon(this, 'fa-cube', 'Otro 1')"><i class="fas fa-cube"></i></div>
-            <div class="icon-option" onclick="selectIcon(this, 'fa-shapes', 'Otro 2')"><i class="fas fa-shapes"></i></div>
-            <div class="icon-option" onclick="selectIcon(this, 'fa-folder', 'Otro 3')"><i class="fas fa-folder"></i></div>
+            <div class="icon-option selected" onclick="selectIcon(this, 'fa-box', 'ארגז')"><i class="fas fa-box"></i></div>
+            <div class="icon-option" onclick="selectIcon(this, 'fa-file-alt', 'עלון')"><i class="fas fa-file-alt"></i></div>
+            <div class="icon-option" onclick="selectIcon(this, 'fa-tags', 'מדבקה')"><i class="fas fa-tags"></i></div>
+            <div class="icon-option" onclick="selectIcon(this, 'fa-shield-alt', 'T.E')"><i class="fas fa-shield-alt"></i></div>
+            <div class="icon-option" onclick="selectIcon(this, 'fa-archive', 'קרטון')"><i class="fas fa-archive"></i></div>
+            <div class="icon-option" onclick="selectIcon(this, 'fa-cube', 'חומר 1')"><i class="fas fa-cube"></i></div>
+            <div class="icon-option" onclick="selectIcon(this, 'fa-shapes', 'חומר 2')"><i class="fas fa-shapes"></i></div>
+            <div class="icon-option" onclick="selectIcon(this, 'fa-folder', 'חומר 3')"><i class="fas fa-folder"></i></div>
         </div>
     `;
 
