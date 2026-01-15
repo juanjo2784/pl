@@ -1,5 +1,6 @@
 let app = { modo: "", lotes: [], memoriaEstandar: {}, ultimoCodigo: "" };
 let iconoSeleccionado = "fa-box"; // Icono por defecto
+let tipoProductoSeleccionado = "Caja"; // Valor por defecto
 
 function iniciarApp(m) {
     const p = document.getElementById('inp-pedido').value;
@@ -11,12 +12,15 @@ function iniciarApp(m) {
 }
 
 // --- LÓGICA DE ICONOS ---
-function selectIcon(el, iconName) {
+function selectIcon(el, iconName, tipoNombre) {
     // Quitar clase selected de todos
     document.querySelectorAll('.icon-option').forEach(opt => opt.classList.remove('selected'));
     // Agregar al seleccionado
     el.classList.add('selected');
+    
+    // Guardamos ambos valores
     iconoSeleccionado = iconName;
+    tipoProductoSeleccionado = tipoNombre; // <--- Nuevo: Guardamos el nombre
 }
 
 // --- NAVEGACIÓN Y ESCANEO ---
@@ -56,14 +60,14 @@ function mostrarFormulario(code) {
     const htmlIconos = `
         <label style="display:block; font-size:12px; color:#666; margin-top:10px;">סוג מוצר</label>
         <div class="icon-selector">
-            <div class="icon-option selected" onclick="selectIcon(this, 'fa-box')"><i class="fas fa-box"></i></div>
-            <div class="icon-option" onclick="selectIcon(this, 'fa-file-alt')"><i class="fas fa-file-alt"></i></div>
-            <div class="icon-option" onclick="selectIcon(this, 'fa-tags')"><i class="fas fa-tags"></i></div>
-            <div class="icon-option" onclick="selectIcon(this, 'fa-shield-alt')"><i class="fas fa-shield-alt"></i></div>
-            <div class="icon-option" onclick="selectIcon(this, 'fa-archive')"><i class="fas fa-archive"></i></div>
-            <div class="icon-option" onclick="selectIcon(this, 'fa-cube')"><i class="fas fa-cube"></i></div>
-            <div class="icon-option" onclick="selectIcon(this, 'fa-shapes')"><i class="fas fa-shapes"></i></div>
-            <div class="icon-option" onclick="selectIcon(this, 'fa-folder')"><i class="fas fa-folder"></i></div>
+            <div class="icon-option selected" onclick="selectIcon(this, 'fa-box', 'Caja')"><i class="fas fa-box"></i></div>
+            <div class="icon-option" onclick="selectIcon(this, 'fa-file-alt', 'Folleto')"><i class="fas fa-file-alt"></i></div>
+            <div class="icon-option" onclick="selectIcon(this, 'fa-tags', 'Etiqueta')"><i class="fas fa-tags"></i></div>
+            <div class="icon-option" onclick="selectIcon(this, 'fa-shield-alt', 'Seguridad')"><i class="fas fa-shield-alt"></i></div>
+            <div class="icon-option" onclick="selectIcon(this, 'fa-archive', 'Carton')"><i class="fas fa-archive"></i></div>
+            <div class="icon-option" onclick="selectIcon(this, 'fa-cube', 'Otro 1')"><i class="fas fa-cube"></i></div>
+            <div class="icon-option" onclick="selectIcon(this, 'fa-shapes', 'Otro 2')"><i class="fas fa-shapes"></i></div>
+            <div class="icon-option" onclick="selectIcon(this, 'fa-folder', 'Otro 3')"><i class="fas fa-folder"></i></div>
         </div>
     `;
 
@@ -127,9 +131,11 @@ function finalizarRegistro(code, cNominal, pNominal) {
     if(!app.memoriaEstandar[code]) {
         app.memoriaEstandar[code] = est;
         app.memoriaEstandar[code + "_icon"] = iconoSeleccionado;
+        app.memoriaEstandar[code + "_tipo"] = tipoProductoSeleccionado;
     }
 
     const icon = app.memoriaEstandar[code + "_icon"] || "fa-box";
+    const tipo = app.memoriaEstandar[code + "_tipo"] || "Caja";
     let com = cNominal !== undefined ? cNominal : (parseInt(document.getElementById('f-com')?.value) || 0);
     let par = pNominal !== undefined ? pNominal : (parseInt(document.getElementById('f-par')?.value) || 0);
 
@@ -145,7 +151,7 @@ function finalizarRegistro(code, cNominal, pNominal) {
         }
         app.lotes[idx].updated = true;
     } else {
-        app.lotes.unshift({ id: code, est: est, com: com, par: par, icon: icon, updated: false });
+        app.lotes.unshift({ id: code, est: est, com: com, par: par, icon: icon, tipo: tipo, updated: false });
     }
     
     actualizarLista();
@@ -205,7 +211,7 @@ function descargarCSV() {
     if(app.lotes.length === 0) return alert("No hay datos para exportar");
 
     // Encabezados claros para Excel
-    let csv = "\uFEFFהזמנה; אצווה; סטנדרטי; ארגזים מלאים; יחידות חלקיות; סה''כ ארגזים (פיזיים); סה''כ יחידות\n";
+    let csv = "\uFEFFהזמנה;סוג;אצווה; סטנדרטי; ארגזים מלאים; יחידות חלקיות; סה''כ ארגזים (פיזיים); סה''כ יחידות\n";
 
     app.lotes.forEach(l => {
         const unidadesTotales = (l.com * l.est) + l.par;
@@ -217,6 +223,7 @@ function descargarCSV() {
 
         csv += `${document.getElementById('txt-pedido').innerText};` +
                `${l.id};` +
+               `${l.tipo};`+
                `${l.est};` +
                `${l.com};` +
                `${l.par};` +
