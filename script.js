@@ -211,7 +211,7 @@ function descargarCSV() {
     if(app.lotes.length === 0) return alert("No hay datos para exportar");
 
     // Encabezados claros para Excel
-    let csv = "\uFEFFהזמנה;סוג;אצווה; סטנדרטי; ארגזים מלאים; יחידות חלקיות; סה''כ ארגזים (פיזיים); סה''כ יחידות\n";
+    let csv = "\uFEFFהזמנה;אצווה;סוג;סטנדרטי; ארגזים מלאים; יחידות חלקיות; סה''כ ארגזים (פיזיים); סה''כ יחידות\n";
 
     app.lotes.forEach(l => {
         const unidadesTotales = (l.com * l.est) + l.par;
