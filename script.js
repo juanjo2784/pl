@@ -28,14 +28,38 @@ function activarEscaneo() {
     document.getElementById('overlay-scanner').classList.remove('hidden');
     document.getElementById('form-scanner').classList.add('hidden');
     document.getElementById('btn-confirm-capture').classList.add('hidden');
-    iconoSeleccionado = "fa-box"; // Reset al abrir
     
     Quagga.init({
-        inputStream: { name: "Live", type: "LiveStream", target: document.querySelector('#interactive'), 
-        constraints: { facingMode: "environment" } },
-        decoder: { readers: ["code_128_reader", "ean_reader"] },
-        locate: true
-    }, (err) => { if (!err) Quagga.start(); });
+        inputStream: {
+            name: "Live",
+            type: "LiveStream",
+            target: document.querySelector('#interactive'),
+            constraints: {
+                // Forzamos resolución HD para ver detalles de códigos pequeños
+                width: { min: 1280 },
+                height: { min: 720 },
+                facingMode: "environment",
+                aspectRatio: { min: 1, max: 2 }
+            },
+            // IMPORTANTE: Limitamos el área donde Quagga busca el código (solo en la mira)
+            area: { top: "30%", right: "10%", left: "10%", bottom: "30%" }
+        },
+        // Localizador más agresivo para códigos difíciles
+        locate: true,
+        locator: {
+            patchSize: "medium", // Tamaño de búsqueda mejorado
+            halfSample: false    // No reducir la imagen a la mitad (mantiene calidad)
+        },
+        decoder: {
+            readers: ["code_128_reader", "ean_reader"], 
+            multiple: false
+        },
+        numOfWorkers: navigator.hardwareConcurrency || 4,
+        frequency: 10 // Escaneos por segundo
+    }, (err) => { 
+        if (err) return alert("Error de cámara: " + err); 
+        Quagga.start(); 
+    });
 }
 
 Quagga.onDetected((res) => {
@@ -242,3 +266,22 @@ function descargarCSV() {
     link.click();
     document.body.removeChild(link);
 }
+
+// Intentar activar enfoque avanzado y Zoom si el hardware lo permite
+Quagga.onStarted(() => {
+    const track = Quagga.CameraAccess.getActiveTrack();
+    if (track && typeof track.getCapabilities === 'function') {
+        const caps = track.getCapabilities();
+        const constraints = {};
+
+        // Forzar enfoque continuo
+        if (caps.focusMode && caps.focusMode.includes('continuous')) {
+            constraints.focusMode = 'continuous';
+        }
+        
+        // Aplicar cambios si existen
+        if (Object.keys(constraints).length > 0) {
+            track.applyConstraints({ advanced: [constraints] });
+        }
+    }
+});

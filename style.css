@@ -10,18 +10,30 @@
         .lote-item { background: white; padding: 12px; border-radius: 10px; margin-bottom: 8px; border-left: 5px solid var(--s); box-shadow: 0 2px 4px rgba(0,0,0,0.1); position: relative; }
         .btn-delete { position: absolute; top: 8px; right: 8px; color: #ccc; border: none; background: none; font-size: 1.1em; }
 
-        /* MIRA DE PRECISIÓN */
+                /* MIRA DE PRECISIÓN */
         .scanner-viewfinder {
             position: absolute;
             top: 50%; left: 50%;
             transform: translate(-50%, -50%);
-            width: 85%;
-            height: 80px;
-            border: 2px solid rgba(40, 167, 69, 0.8);
-            border-radius: 4px;
+            width: 80%; /* Más angosto ayuda a centrar */
+            height: 100px; /* Altura ideal para un código de barras */
+            border: 3px solid #28a745;
+            border-radius: 8px;
             z-index: 5;
+            /* Sombra interna para indicar el área de lectura */
+            box-shadow: 0 0 0 4000px rgba(0,0,0,0.5), inset 0 0 15px rgba(0,255,0,0.5);
             pointer-events: none;
-            box-shadow: 0 0 0 4000px rgba(0,0,0,0.6); /* Cortina de enfoque */
+        }
+
+        /* Agregamos una línea roja tipo láser para ayudar al ojo */
+        .scanner-viewfinder::after {
+            content: "";
+            position: absolute;
+            top: 50%; left: 5%;
+            width: 90%; height: 2px;
+            background: red;
+            box-shadow: 0 0 8px red;
+            opacity: 0.6;
         }
         .laser-line {
             position: absolute;
