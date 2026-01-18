@@ -38,7 +38,7 @@ function activarEscaneo() {
                 facingMode: "environment",
                 aspectRatio: { min: 1, max: 2 }
             },
-            area: { top: "30%", right: "25%", left: "25%", bottom: "30%" }
+            area: { top: "45%", right: "10%", left: "10%", bottom: "45%" }
         },
         locator: { patchSize: "large", halfSample: true },
         decoder: { readers: ["code_128_reader", "ean_reader"], multiple: false },
