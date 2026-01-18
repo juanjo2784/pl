@@ -35,16 +35,18 @@ function activarEscaneo() {
             type: "LiveStream",
             target: document.querySelector('#interactive'),
             constraints: {
-                // Forzamos resolución HD para ver detalles de códigos pequeños
-                width: { min: 1280 },
-                height: { min: 720 },
+                width: 1280,   // Resolución HD
+                height: 720,
                 facingMode: "environment",
-                aspectRatio: { min: 1, max: 2 }
+                // Parámetros avanzados de enfoque
+                focusMode: "continuous",
+                pointsOfInterest: {
+                    x: 0.5, y: 0.5 // Enfocar al centro exacto
+                }
             },
-            // IMPORTANTE: Limitamos el área donde Quagga busca el código (solo en la mira)
-            area: { top: "30%", right: "10%", left: "10%", bottom: "30%" }
+            area: { top: "25%", right: "10%", left: "10%", bottom: "25%" } 
         },
-        // Localizador más agresivo para códigos difíciles
+                // Localizador más agresivo para códigos difíciles
         locate: true,
         locator: {
             patchSize: "medium", // Tamaño de búsqueda mejorado
@@ -175,7 +177,7 @@ function finalizarRegistro(code, cNominal, pNominal) {
         }
         app.lotes[idx].updated = true;
     } else {
-        app.lotes.unshift({ id: code, est: est, com: com, par: par, icon: icon, tipo: tipo, updated: false });
+        app.lotes.unshift({ id: code, est: est, com: com, par: par, icon: icon, tipo: tipoProductoSeleccionado, updated: true });
     }
     
     actualizarLista();
@@ -243,17 +245,23 @@ function descargarCSV() {
         const totalCajasFisicas = l.com + (l.par > 0 ? 1 : 0);
         
         // Buscamos el nombre del tipo según el icono para que el CSV sea legible
-        const tipoNombre = l.icon.replace('fa-', '').toUpperCase();
+    app.lotes.forEach(l => {
+            const unidadesTotales = (l.com * l.est) + l.par;
+            const totalCajasFisicas = l.com + (l.par > 0 ? 1 : 0);
 
-        csv += `${document.getElementById('txt-pedido').innerText};` +
-               `${l.id};` +
-               `${l.tipo};`+
-               `${l.est};` +
-               `${l.com};` +
-               `${l.par};` +
-               `${totalCajasFisicas};` + // Aquí incluimos totC
-               `${unidadesTotales}\n`;
-    });
+            // Si l.tipo existe (porque lo guardamos al seleccionar), lo usamos.
+            // Si no, lo extraemos del icono como respaldo.
+            const tipoFinal = l.tipo || l.icon.replace('fa-', '').toUpperCase();
+
+            csv += `${document.getElementById('txt-pedido').innerText};` +
+                `${l.id};` +
+                `${tipoFinal};` + // Usamos la variable unificada
+                `${l.est};` +
+                `${l.com};` +
+                `${l.par};` +
+                `${totalCajasFisicas};` +
+                `${unidadesTotales}\n`;
+        });
 
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
