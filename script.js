@@ -1,7 +1,9 @@
 let app = { modo: "", lotes: [], memoriaEstandar: {}, ultimoCodigo: "" };
-let iconoSeleccionado = "fa-box"; // Icono por defecto
-let tipoProductoSeleccionado = "Caja"; // Valor por defecto
+let iconoSeleccionado = "fa-box"; 
+let tipoProductoSeleccionado = "ארגז"; // Default en Hebreo
+let torchEnabled = false;
 
+// --- INICIO ---
 function iniciarApp(m) {
     const p = document.getElementById('inp-pedido').value;
     if(!p) return alert("Ingrese ID de pedido");
@@ -13,59 +15,48 @@ function iniciarApp(m) {
 
 // --- LÓGICA DE ICONOS ---
 function selectIcon(el, iconName, tipoNombre) {
-    // Quitar clase selected de todos
     document.querySelectorAll('.icon-option').forEach(opt => opt.classList.remove('selected'));
-    // Agregar al seleccionado
     el.classList.add('selected');
-    
-    // Guardamos ambos valores
     iconoSeleccionado = iconName;
-    tipoProductoSeleccionado = tipoNombre; // <--- Nuevo: Guardamos el nombre
+    tipoProductoSeleccionado = tipoNombre;
 }
 
-// --- NAVEGACIÓN Y ESCANEO ---
+// --- ESCANEO HD Y FLEXIBLE ---
 function activarEscaneo() {
     document.getElementById('overlay-scanner').classList.remove('hidden');
     document.getElementById('form-scanner').classList.add('hidden');
     document.getElementById('btn-confirm-capture').classList.add('hidden');
     
-Quagga.init({
-    inputStream: {
-        name: "Live",
-        type: "LiveStream",
-        target: document.querySelector('#interactive'),
-        constraints: {
-            width: 1280, 
-            height: 720,
-            facingMode: "environment",
-            focusMode: "continuous"
+    Quagga.init({
+        inputStream: {
+            name: "Live",
+            type: "LiveStream",
+            target: document.querySelector('#interactive'),
+            constraints: {
+                width: { min: 1280 },
+                height: { min: 720 },
+                facingMode: "environment",
+                aspectRatio: { min: 1, max: 2 }
+            },
+            area: { top: "20%", right: "5%", left: "5%", bottom: "20%" }
         },
-        // Ajustamos el área para que sea un poco más amplia, facilitando captar códigos inclinados
-        area: { top: "20%", right: "5%", left: "5%", bottom: "20%" }
-    },
-    locator: {
-        patchSize: "large", // Escala más grande para encontrar códigos inclinados
-        halfSample: true    // AYUDA CRÍTICA: Procesa una versión más ligera para detectar el ángulo rápido
-    },
-    decoder: {
-        readers: ["code_128_reader", "ean_reader"],
-        // Habilitamos que intente leer códigos aunque no estén perfectamente horizontales
-        multiple: true 
-    },
-    locate: true,
-    // Aumentamos la frecuencia de escaneo para captar el código mientras mueves el celular
-    frequency: 15 
-}, (err) => {
-    if (err) return alert("Error de cámara: " + err); 
+        locator: { patchSize: "large", halfSample: true },
+        decoder: { readers: ["code_128_reader", "ean_reader"], multiple: false },
+        locate: true,
+        frequency: 15
+    }, (err) => { 
+        if (err) return alert("Error de cámara: " + err);
         Quagga.start(); 
     });
 }
 
+// --- DETECCIÓN Y VALIDACIÓN ---
 Quagga.onDetected((res) => {
     app.ultimoCodigo = res.codeResult.code;
     const btn = document.getElementById('btn-confirm-capture');
-    btn.innerHTML = `אישור אצווה: ${app.ultimoCodigo}`;
+    btn.innerHTML = `<i class="fas fa-check"></i> אישור אצווה: ${app.ultimoCodigo}`;
     btn.classList.remove('hidden');
+    if (navigator.vibrate) navigator.vibrate(100);
 });
 
 function procesarCapturaManual() {
@@ -73,10 +64,10 @@ function procesarCapturaManual() {
     mostrarFormulario(app.ultimoCodigo);
 }
 
-// --- FORMULARIO DINÁMICO ---
+// --- FORMULARIO ---
 function mostrarFormulario(code) {
     document.getElementById('form-scanner').classList.remove('hidden');
-    document.getElementById('txt-lote-det').innerText = "הצווה: " + code;
+    document.getElementById('txt-lote-det').innerText = "אצווה: " + code;
     const fields = document.getElementById('dynamic-fields');
     const est = app.memoriaEstandar[code] || "";
 
@@ -100,14 +91,8 @@ function mostrarFormulario(code) {
             <label style="display:block; font-size:12px; color:#666; margin-top:10px;">כמות סטנדרטית</label>
             <input type="number" id="f-est" value="${est}" style="width:100%; padding:10px; margin-bottom:10px;">
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                <div>
-                    <label style="display:block; font-size:12px; color:#666;">ארגזים</label>
-                    <input type="number" id="f-com" placeholder="0" style="width:100%; padding:10px;">
-                </div>
-                <div>
-                    <label style="display:block; font-size:12px; color:#666;">חלקי</label>
-                    <input type="number" id="f-par" placeholder="0" style="width:100%; padding:10px;">
-                </div>
+                <div><label>ארגזים</label><input type="number" id="f-com" placeholder="0" style="width:100%; padding:10px;"></div>
+                <div><label>חלקי</label><input type="number" id="f-par" placeholder="0" style="width:100%; padding:10px;"></div>
             </div>
             <button class="btn-action" style="background:var(--p); width:100%; color:white; padding:15px; border:none; border-radius:8px; margin-top:15px;" onclick="finalizarRegistro('${code}')">שמור הכל</button>
         `;
@@ -115,20 +100,19 @@ function mostrarFormulario(code) {
         if(!est) {
             fields.innerHTML = `
                 ${htmlIconos}
-                <label>Cantidad estándar:</label>
+                <label>כמות סטנדרטית:</label>
                 <input type="number" id="f-est" placeholder="Ej: 12" style="width:100%; padding:10px; margin-top:5px;">
-                <button class="btn-action" style="background:var(--s); width:100%; color:white; padding:15px; border:none; border-radius:8px; margin-top:10px;" onclick="definirEst('${code}')">לְהַמשִׁיך</button>
+                <button class="btn-action" style="background:var(--s); width:100%; color:white; padding:15px; border:none; border-radius:8px; margin-top:10px;" onclick="definirEst('${code}')">המשך</button>
             `;
         } else {
             const iconClass = app.memoriaEstandar[code + "_icon"] || "fa-box";
             fields.innerHTML = `
                 <div style="background:#e7f3ff; padding:10px; border-radius:8px; margin-bottom:15px; text-align:center;">
-                    <i class="fas ${iconClass} fa-2x"></i><br>
-                    כמות סטנדרטית: <b>${est}</b>
+                    <i class="fas ${iconClass} fa-2x"></i><br>כמות סטנדרטית: <b>${est}</b>
                 </div>
-                <input type="number" id="f-par" placeholder="Unidades Parciales" style="width:100%; padding:10px; margin-bottom:15px; font-size:18px; text-align:center;">
+                <input type="number" id="f-par" placeholder="יחידות חלקיות" style="width:100%; padding:10px; margin-bottom:15px; font-size:18px; text-align:center;">
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                    <button class="btn-action" style="background:var(--s); color:white; padding:15px; border:none; border-radius:8px;" onclick="finalizarRegistro('${code}', 1, 0)">חוסף ארגז</button>
+                    <button class="btn-action" style="background:var(--s); color:white; padding:15px; border:none; border-radius:8px;" onclick="finalizarRegistro('${code}', 1, 0)">+1 ארגז</button>
                     <button class="btn-action" style="background:var(--p); color:white; padding:15px; border:none; border-radius:8px;" onclick="finalizarRegistro('${code}', 0, undefined)">חלקי</button>
                 </div>
             `;
@@ -141,24 +125,23 @@ function definirEst(code) {
     if(!val) return alert("הזן כמות סטנדרטית");
     app.memoriaEstandar[code] = val;
     app.memoriaEstandar[code + "_icon"] = iconoSeleccionado;
+    app.memoriaEstandar[code + "_tipo"] = tipoProductoSeleccionado;
     mostrarFormulario(code);
 }
 
 function finalizarRegistro(code, cNominal, pNominal) {
     const inputEst = document.getElementById('f-est');
     const est = app.memoriaEstandar[code] || (inputEst ? parseInt(inputEst.value) : 0);
-
     if(!est) return alert("עליך להגדיר כמות סטנדרטית");
 
-    // Guardar estándar e icono si es nuevo
     if(!app.memoriaEstandar[code]) {
         app.memoriaEstandar[code] = est;
         app.memoriaEstandar[code + "_icon"] = iconoSeleccionado;
         app.memoriaEstandar[code + "_tipo"] = tipoProductoSeleccionado;
     }
 
-    const icon = app.memoriaEstandar[code + "_icon"] || "fa-box";
-    const tipo = app.memoriaEstandar[code + "_tipo"] || "Caja";
+    const icon = app.memoriaEstandar[code + "_icon"];
+    const tipo = app.memoriaEstandar[code + "_tipo"];
     let com = cNominal !== undefined ? cNominal : (parseInt(document.getElementById('f-com')?.value) || 0);
     let par = pNominal !== undefined ? pNominal : (parseInt(document.getElementById('f-par')?.value) || 0);
 
@@ -174,48 +157,32 @@ function finalizarRegistro(code, cNominal, pNominal) {
         }
         app.lotes[idx].updated = true;
     } else {
-        app.lotes.unshift({ id: code, est: est, com: com, par: par, icon: icon, tipo: tipoProductoSeleccionado, updated: true });
+        app.lotes.unshift({ id: code, est: est, com: com, par: par, icon: icon, tipo: tipo, updated: true });
     }
-    
     actualizarLista();
     cerrarEscaner();
 }
 
-// --- RENDERIZADO DE LISTA ---
+// --- LISTA Y EDICIÓN ---
 function actualizarLista() {
     const div = document.getElementById('container-lotes');
     div.innerHTML = app.lotes.map((l, i) => {
         const totU = (l.com * l.est) + l.par;
         const totC = l.com + (l.par > 0 ? 1 : 0);
-        
         return `
             <div class="lote-item ${l.updated ? 'updated' : ''}" style="position:relative;">
-                <button onclick="eliminar(${i})" style="position:absolute; top:10px; right:10px; background:none; border:none; color:#dc3545; font-size:18px; padding:5px; z-index:5;">
-                    <i class="fas fa-trash-alt"></i>
-                </button>
-
+                <button onclick="eliminar(${i})" style="position:absolute; top:10px; right:10px; border:none; background:none; color:#dc3545; font-size:18px;"><i class="fas fa-trash-alt"></i></button>
                 <div style="display:flex; align-items:center; margin-bottom:5px;">
-                    <i class="fas ${l.icon}" style="color:var(--s); margin-right:10px; font-size:20px;"></i>
-                    <b style="font-size:16px;">${l.id}</b>
+                    <i class="fas ${l.icon}" style="color:var(--s); margin-right:10px; font-size:20px;"></i><b>${l.id}</b>
                 </div>
-                
-                <div style="font-size:12px; color:#666; margin-bottom:8px;">
-                    Tipo: <b>${l.tipo}</b> | Est: ${l.est}
+                <div style="font-size:12px; color:#666;">סוג: <b>${l.tipo}</b> | תקן: ${l.est}</div>
+                <div style="display:flex; gap:10px; align-items:center; background:#f1f3f5; padding:8px; border-radius:6px; margin-top:5px;">
+                    ארגזים: <input type="number" class="input-edit" value="${l.com}" onchange="edit(${i},'com',this.value)">
+                    חלקי: <input type="number" class="input-edit" value="${l.par}" onchange="edit(${i},'par',this.value)">
                 </div>
-
-                <div style="display:flex; gap:10px; align-items:center; background:#f1f3f5; padding:8px; border-radius:6px;">
-                    Cjs: <input type="number" class="input-edit" value="${l.com}" onchange="edit(${i},'com',this.value)" style="width:50px;">
-                    Prc: <input type="number" class="input-edit" value="${l.par}" onchange="edit(${i},'par',this.value)" style="width:50px;">
-                </div>
-
-                <div class="calc-res">
-                    <span>Total Cajas: <b>${totC}</b></span>
-                    <span>Total Unid: <b>${totU}</b></span>
-                </div>
+                <div class="calc-res"><span>סה''כ ארגזים: <b>${totC}</b></span><span>סה''כ יחידות: <b>${totU}</b></span></div>
             </div>`;
     }).join('');
-    
-    // Resetear flag de animación
     app.lotes.forEach(l => l.updated = false);
 }
 
@@ -231,77 +198,46 @@ function edit(idx, campo, val) {
 }
 
 function eliminar(idx) {
-    if(confirm("למחוק את הרשומה הזו?")) {
-        app.lotes.splice(idx, 1);
-        actualizarLista();
-    }
+    if(confirm("למחוק את הרשומה הזו?")) { app.lotes.splice(idx, 1); actualizarLista(); }
 }
 
-function cerrarEscaner() { Quagga.stop(); document.getElementById('overlay-scanner').classList.add('hidden'); }
-
-function descargarCSV() {
-    if (app.lotes.length === 0) return alert("No hay datos para exportar");
-
-    // Encabezados claros (BOM incluido para Excel en Hebreo/Español)
-    let csv = "\uFEFFהזמנה;אצווה;סוג;סטנדרטי;ארגזים מלאים;יחידות חלקיות;סה''כ ארגזים (פיזיים);סה''כ יחידות\n";
-
-    app.lotes.forEach(l => {
-        const unidadesTotales = (l.com * l.est) + l.par;
-        const totalCajasFisicas = l.com + (l.par > 0 ? 1 : 0);
-        
-        // Prioridad: 1. l.tipo (el value del select) 2. l.icon (limpiado)
-        const tipoFinal = l.tipo || (l.icon ? l.icon.replace('fa-', '').toUpperCase() : "GENERAL");
-
-        csv += `${document.getElementById('txt-pedido').innerText};` +
-               `${l.id};` +
-               `${tipoFinal};` + 
-               `${l.est};` +
-               `${l.com};` +
-               `${l.par};` +
-               `${totalCajasFisicas};` +
-               `${unidadesTotales}\n`;
-    });
-
-    // Proceso de descarga
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    
-    link.setAttribute("href", url);
-    link.setAttribute("download", `Carga_${document.getElementById('txt-pedido').innerText}.csv`);
-    link.style.visibility = 'hidden';
-    
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+// --- UTILIDADES ---
+function cerrarEscaner() { 
+    Quagga.stop(); 
+    torchEnabled = false;
+    document.getElementById('overlay-scanner').classList.add('hidden'); 
 }
 
-// Intentar activar enfoque avanzado y Zoom si el hardware lo permite
-Quagga.onStarted(() => {
+function toggleTorch() {
     const track = Quagga.CameraAccess.getActiveTrack();
     if (track && typeof track.getCapabilities === 'function') {
         const caps = track.getCapabilities();
-        const constraints = {};
-
-        // Forzar enfoque continuo
-        if (caps.focusMode && caps.focusMode.includes('continuous')) {
-            constraints.focusMode = 'continuous';
-        }
-        
-        // Aplicar cambios si existen
-        if (Object.keys(constraints).length > 0) {
-            track.applyConstraints({ advanced: [constraints] });
+        if (caps.torch) {
+            torchEnabled = !torchEnabled;
+            track.applyConstraints({ advanced: [{ torch: torchEnabled }] });
+            document.getElementById('btn-torch').style.color = torchEnabled ? "#ffc107" : "white";
         }
     }
-});
+}
 
 function aplicarZoom(val) {
     const track = Quagga.CameraAccess.getActiveTrack();
-    if (track && typeof track.getCapabilities === 'function') {
-        const caps = track.getCapabilities();
-        if (caps.zoom) {
-            track.applyConstraints({ advanced: [{ zoom: parseFloat(val) }] })
-                 .catch(e => console.error("Zoom no soportado:", e));
-        }
+    if (track && typeof track.getCapabilities === 'function' && track.getCapabilities().zoom) {
+        track.applyConstraints({ advanced: [{ zoom: parseFloat(val) }] });
     }
-};
+}
+
+function descargarCSV() {
+    if (app.lotes.length === 0) return alert("No hay datos");
+    let csv = "\uFEFFהזמנה;אצווה;סוג;סטנדרטי;ארגזים מלאים;יחידות חלקיות;סה''כ ארגזים (פיזיים);סה''כ יחידות\n";
+    app.lotes.forEach(l => {
+        const totU = (l.com * l.est) + l.par;
+        const totC = l.com + (l.par > 0 ? 1 : 0);
+        csv += `${document.getElementById('txt-pedido').innerText};${l.id};${l.tipo};${l.est};${l.com};${l.par};${totC};${totU}\n`;
+    });
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `Carga_${document.getElementById('txt-pedido').innerText}.csv`;
+    link.click();
+}
