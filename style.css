@@ -15,7 +15,7 @@
             position: absolute;
             top: 50%; left: 50%;
             transform: translate(-50%, -50%);
-            width: 75%; height: 180px; /* Un poco más alto para ángulos */
+            width: 50%; height: 100px; /* Un poco más alto para ángulos */
             border: 2px dashed rgba(255, 255, 255, 0.5); /* Guía sutil */
             z-index: 5;
             box-shadow: 0 0 0 4000px rgba(0,0,0,0.5);
