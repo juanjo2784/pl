@@ -190,26 +190,35 @@ function actualizarLista() {
     div.innerHTML = app.lotes.map((l, i) => {
         const totU = (l.com * l.est) + l.par;
         const totC = l.com + (l.par > 0 ? 1 : 0);
+        
         return `
-            <div class="lote-item ${l.updated ? 'updated' : ''}">
-                <button onclick="מחק את זה(${i})" style="position:absolute; top:8px; right:8px; border:none; background:none; color:#dc3545; font-size:18px; cursor:pointer;">
+            <div class="lote-item ${l.updated ? 'updated' : ''}" style="position:relative;">
+                <button onclick="eliminar(${i})" style="position:absolute; top:10px; right:10px; background:none; border:none; color:#dc3545; font-size:18px; padding:5px; z-index:5;">
                     <i class="fas fa-trash-alt"></i>
                 </button>
-                <i class="fas ${l.icon}" style="margin-right:8px; color:var(--s);"></i>
-                <b>${l.id}</b> <span style="font-size:11px; color:#888;">(Est: ${l.est})</span>
-                <div style="margin-top:8px; display:flex; align-items:center; gap:10px;">
-                    <span style="font-size:13px;">ארגזים:</span>
-                    <input type="number" class="input-edit" value="${l.com}" onchange="edit(${i},'com',this.value)">
-                    <span style="font-size:13px;">חלקי:</span>
-                    <input type="number" class="input-edit" value="${l.par}" onchange="edit(${i},'par',this.value)">
+
+                <div style="display:flex; align-items:center; margin-bottom:5px;">
+                    <i class="fas ${l.icon}" style="color:var(--s); margin-right:10px; font-size:20px;"></i>
+                    <b style="font-size:16px;">${l.id}</b>
                 </div>
+                
+                <div style="font-size:12px; color:#666; margin-bottom:8px;">
+                    Tipo: <b>${l.tipo}</b> | Est: ${l.est}
+                </div>
+
+                <div style="display:flex; gap:10px; align-items:center; background:#f1f3f5; padding:8px; border-radius:6px;">
+                    Cjs: <input type="number" class="input-edit" value="${l.com}" onchange="edit(${i},'com',this.value)" style="width:50px;">
+                    Prc: <input type="number" class="input-edit" value="${l.par}" onchange="edit(${i},'par',this.value)" style="width:50px;">
+                </div>
+
                 <div class="calc-res">
-                    <span>כח''ה ארגזים: <b>${totC}</b></span>
-                    <span>סח''ה יחידות: <b>${totU}</b></span>
+                    <span>Total Cajas: <b>${totC}</b></span>
+                    <span>Total Unid: <b>${totU}</b></span>
                 </div>
             </div>`;
     }).join('');
-    // Limpiar flag de actualización después de renderizar
+    
+    // Resetear flag de animación
     app.lotes.forEach(l => l.updated = false);
 }
 
@@ -293,3 +302,14 @@ Quagga.onStarted(() => {
         }
     }
 });
+
+function aplicarZoom(val) {
+    const track = Quagga.CameraAccess.getActiveTrack();
+    if (track && typeof track.getCapabilities === 'function') {
+        const caps = track.getCapabilities();
+        if (caps.zoom) {
+            track.applyConstraints({ advanced: [{ zoom: parseFloat(val) }] })
+                 .catch(e => console.error("Zoom no soportado:", e));
+        }
+    }
+}
