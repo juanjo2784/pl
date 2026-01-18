@@ -15,26 +15,26 @@
             position: absolute;
             top: 50%; left: 50%;
             transform: translate(-50%, -50%);
-            width: 80%; /* Más angosto ayuda a centrar */
-            height: 100px; /* Altura ideal para un código de barras */
-            border: 3px solid #28a745;
-            border-radius: 8px;
+            width: 75%; height: 180px; /* Un poco más alto para ángulos */
+            border: 2px dashed rgba(255, 255, 255, 0.5); /* Guía sutil */
             z-index: 5;
-            /* Sombra interna para indicar el área de lectura */
-            box-shadow: 0 0 0 4000px rgba(0,0,0,0.5), inset 0 0 15px rgba(0,255,0,0.5);
-            pointer-events: none;
+            box-shadow: 0 0 0 4000px rgba(0,0,0,0.5);
         }
 
-        /* Agregamos una línea roja tipo láser para ayudar al ojo */
+        /* Esquinas resaltadas para indicar zona de enfoque */
+        .scanner-viewfinder::before {
+            content: "";
+            position: absolute;
+            top: -5px; left: -5px; width: 25px; height: 25px;
+            border-top: 5px solid #28a745; border-left: 5px solid #28a745;
+        }
         .scanner-viewfinder::after {
             content: "";
             position: absolute;
-            top: 50%; left: 5%;
-            width: 90%; height: 2px;
-            background: red;
-            box-shadow: 0 0 8px red;
-            opacity: 0.6;
+            bottom: -5px; right: -5px; width: 25px; height: 25px;
+            border-bottom: 5px solid #28a745; border-right: 5px solid #28a745;
         }
+
         .laser-line {
             position: absolute;
             top: 50%; left: 5%; width: 90%;

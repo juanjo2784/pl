@@ -29,37 +29,34 @@ function activarEscaneo() {
     document.getElementById('form-scanner').classList.add('hidden');
     document.getElementById('btn-confirm-capture').classList.add('hidden');
     
-    Quagga.init({
-        inputStream: {
-            name: "Live",
-            type: "LiveStream",
-            target: document.querySelector('#interactive'),
-            constraints: {
-                width: 1280,   // Resolución HD
-                height: 720,
-                facingMode: "environment",
-                // Parámetros avanzados de enfoque
-                focusMode: "continuous",
-                pointsOfInterest: {
-                    x: 0.5, y: 0.5 // Enfocar al centro exacto
-                }
-            },
-            area: { top: "25%", right: "10%", left: "10%", bottom: "25%" } 
+Quagga.init({
+    inputStream: {
+        name: "Live",
+        type: "LiveStream",
+        target: document.querySelector('#interactive'),
+        constraints: {
+            width: 1280, 
+            height: 720,
+            facingMode: "environment",
+            focusMode: "continuous"
         },
-                // Localizador más agresivo para códigos difíciles
-        locate: true,
-        locator: {
-            patchSize: "medium", // Tamaño de búsqueda mejorado
-            halfSample: false    // No reducir la imagen a la mitad (mantiene calidad)
-        },
-        decoder: {
-            readers: ["code_128_reader", "ean_reader"], 
-            multiple: false
-        },
-        numOfWorkers: navigator.hardwareConcurrency || 4,
-        frequency: 10 // Escaneos por segundo
-    }, (err) => { 
-        if (err) return alert("Error de cámara: " + err); 
+        // Ajustamos el área para que sea un poco más amplia, facilitando captar códigos inclinados
+        area: { top: "20%", right: "5%", left: "5%", bottom: "20%" }
+    },
+    locator: {
+        patchSize: "large", // Escala más grande para encontrar códigos inclinados
+        halfSample: true    // AYUDA CRÍTICA: Procesa una versión más ligera para detectar el ángulo rápido
+    },
+    decoder: {
+        readers: ["code_128_reader", "ean_reader"],
+        // Habilitamos que intente leer códigos aunque no estén perfectamente horizontales
+        multiple: true 
+    },
+    locate: true,
+    // Aumentamos la frecuencia de escaneo para captar el código mientras mueves el celular
+    frequency: 15 
+}, (err) => {
+    if (err) return alert("Error de cámara: " + err); 
         Quagga.start(); 
     });
 }
