@@ -243,42 +243,37 @@ function eliminar(idx) {
 function cerrarEscaner() { Quagga.stop(); document.getElementById('overlay-scanner').classList.add('hidden'); }
 
 function descargarCSV() {
-    if(app.lotes.length === 0) return alert("No hay datos para exportar");
+    if (app.lotes.length === 0) return alert("No hay datos para exportar");
 
-    // Encabezados claros para Excel
-    let csv = "\uFEFFהזמנה;אצווה;סוג;סטנדרטי; ארגזים מלאים; יחידות חלקיות; סה''כ ארגזים (פיזיים); סה''כ יחידות\n";
+    // Encabezados claros (BOM incluido para Excel en Hebreo/Español)
+    let csv = "\uFEFFהזמנה;אצווה;סוג;סטנדרטי;ארגזים מלאים;יחידות חלקיות;סה''כ ארגזים (פיזיים);סה''כ יחידות\n";
 
     app.lotes.forEach(l => {
         const unidadesTotales = (l.com * l.est) + l.par;
-        // totC: Cajas cerradas + 1 si hay sobrantes
         const totalCajasFisicas = l.com + (l.par > 0 ? 1 : 0);
         
-        // Buscamos el nombre del tipo según el icono para que el CSV sea legible
-    app.lotes.forEach(l => {
-            const unidadesTotales = (l.com * l.est) + l.par;
-            const totalCajasFisicas = l.com + (l.par > 0 ? 1 : 0);
+        // Prioridad: 1. l.tipo (el value del select) 2. l.icon (limpiado)
+        const tipoFinal = l.tipo || (l.icon ? l.icon.replace('fa-', '').toUpperCase() : "GENERAL");
 
-            // Si l.tipo existe (porque lo guardamos al seleccionar), lo usamos.
-            // Si no, lo extraemos del icono como respaldo.
-            const tipoFinal = l.tipo || l.icon.replace('fa-', '').toUpperCase();
+        csv += `${document.getElementById('txt-pedido').innerText};` +
+               `${l.id};` +
+               `${tipoFinal};` + 
+               `${l.est};` +
+               `${l.com};` +
+               `${l.par};` +
+               `${totalCajasFisicas};` +
+               `${unidadesTotales}\n`;
+    });
 
-            csv += `${document.getElementById('txt-pedido').innerText};` +
-                `${l.id};` +
-                `${tipoFinal};` + // Usamos la variable unificada
-                `${l.est};` +
-                `${l.com};` +
-                `${l.par};` +
-                `${totalCajasFisicas};` +
-                `${unidadesTotales}\n`;
-        });
-
+    // Proceso de descarga
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
     
     link.setAttribute("href", url);
     link.setAttribute("download", `Carga_${document.getElementById('txt-pedido').innerText}.csv`);
     link.style.visibility = 'hidden';
+    
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -312,4 +307,4 @@ function aplicarZoom(val) {
                  .catch(e => console.error("Zoom no soportado:", e));
         }
     }
-}
+};
