@@ -192,7 +192,7 @@ function actualizarLista() {
         htmlFinal += `
             <div style="background:var(--dark); color:white; padding:8px 12px; border-radius:8px; margin-top:15px; display:flex; justify-content:space-between; align-items:center;">
                 <span><i class="fas ${g.icon}"></i> <b>${tipo.toUpperCase()}</b></span>
-                <span style="font-size:12px;">Cjs Tot: ${g.totalCajas} | Unid: ${g.totalUnid}</span>
+                <span style="font-size:12px;">סכ''ה ארגזים: ${g.totalCajas} | סכ''ה יחידות: ${g.totalUnid}</span>
             </div>
         `;
 
@@ -258,13 +258,13 @@ function aplicarZoom(val) {
 }
 
 function descargarCSV() {
-    if (app.lotes.length === 0) return alert("No hay datos para exportar");
+    if (app.lotes.length === 0) return alert("אין נתונים לייצוא.");
 
     const idPedido = document.getElementById('txt-pedido').innerText || "SIN_ID";
     
     // 1. Cabecera y Detalle de Lotes
-    let csv = "\uFEFFDETALLE DE LOTES\n";
-    csv += "Pedido,Lote,Tipo,Estándar,Cajas,Parcial,Total Unidades\n";
+    let csv = "\uFEFFפרטי האצווה\n";
+    csv += "הזמנה, אצווה, סוג, סטנדרטי, קופסאות, חלקי, סה''כ יחידות\n";
 
     // Objeto para calcular los totales por tipo mientras recorremos
     const resumen = {};
@@ -272,7 +272,7 @@ function descargarCSV() {
     app.lotes.forEach(l => {
         const totalU = (l.com * l.est) + l.par;
         const totalC = l.com + (l.par > 0 ? 1 : 0);
-        const tipo = l.tipo || "Caja";
+        const tipo = l.tipo || "ארגז";
 
         // Agregar fila de detalle
         csv += `${idPedido},${l.id},${tipo},${l.est},${l.com},${l.par},${totalU}\n`;
@@ -286,8 +286,8 @@ function descargarCSV() {
     });
 
     // 2. Sección de Resumen por Tipo
-    csv += "\n\nRESUMEN POR TIPO DE PRODUCTO\n";
-    csv += "Tipo,Total Cajas,Total Unidades\n";
+    csv += "\n\nסיכום לפי סוג מוצר\n";
+    csv += "סוג, סה''כ קופסאות, סה''כ יחידות\n";
 
     for (const tipo in resumen) {
         csv += `${tipo},${resumen[tipo].cjs},${resumen[tipo].unid}\n`;
@@ -300,10 +300,11 @@ function descargarCSV() {
     csv += `\nTOTAL GENERAL,${granTotalCjs},${granTotalUnid}\n`;
 
     // Lógica de descarga
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const bom = '\uFEFF';
+    const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.setAttribute("download", `Pedido_${idPedido}_Completo.csv`);
+    link.setAttribute("download", `הזמנה_${idPedido}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
