@@ -74,14 +74,14 @@ function mostrarFormulario(code) {
     const htmlIconos = `
         <label style="display:block; font-size:12px; color:#666; margin-top:10px;">סוג מוצר</label>
         <div class="icon-selector">
-            <div class="icon-option selected" onclick="selectIcon(this, 'fa-box', 'ארגז')"><i class="fas fa-box"></i></div>
-            <div class="icon-option" onclick="selectIcon(this, 'fa-file-alt', 'עלון')"><i class="fas fa-file-alt"></i></div>
-            <div class="icon-option" onclick="selectIcon(this, 'fa-tags', 'מדבקה')"><i class="fas fa-tags"></i></div>
-            <div class="icon-option" onclick="selectIcon(this, 'fa-shield-alt', 'T.E')"><i class="fas fa-shield-alt"></i></div>
-            <div class="icon-option" onclick="selectIcon(this, 'fa-archive', 'קרטון')"><i class="fas fa-archive"></i></div>
-            <div class="icon-option" onclick="selectIcon(this, 'fa-cube', 'חומר 1')"><i class="fas fa-cube"></i></div>
-            <div class="icon-option" onclick="selectIcon(this, 'fa-shapes', 'חומר 2')"><i class="fas fa-shapes"></i></div>
-            <div class="icon-option" onclick="selectIcon(this, 'fa-folder', 'חומר 3')"><i class="fas fa-folder"></i></div>
+            <div class="icon-option selected" onclick="selectIcon(this, 'fa-box', 'ארגז')"><i class="fas fa-box"></i><span>ארגז</span></div>
+            <div class="icon-option" onclick="selectIcon(this, 'fa-file-alt', 'עלון')"><i class="fas fa-file-alt"></i><span>עלון</span></div>
+            <div class="icon-option" onclick="selectIcon(this, 'fa-tags', 'מדבקה')"><i class="fas fa-tags"></i><span>מדבקה</span></div>
+            <div class="icon-option" onclick="selectIcon(this, 'fa-shield-alt', 'T.E')"><i class="fas fa-shield-alt"></i><span>T.E.</span></div>
+            <div class="icon-option" onclick="selectIcon(this, 'fa-archive', 'קרטון')"><i class="fas fa-archive"></i><span>קרטון</span></div>
+            <div class="icon-option" onclick="selectIcon(this, 'fa-cube', 'חומר 1')"><i class="fas fa-cube"></i><span>חומר1 </span></div>
+            <div class="icon-option" onclick="selectIcon(this, 'fa-shapes', 'חומר 2')"><i class="fas fa-shapes"></i><span>חומר 2</span></div>
+            <div class="icon-option" onclick="selectIcon(this, 'fa-folder', 'חומר 3')"><i class="fas fa-folder"></i><span>חומר 3</span></div>
         </div>
     `;
 
@@ -166,26 +166,56 @@ function finalizarRegistro(code, cNominal, pNominal) {
 // --- LISTA Y EDICIÓN ---
 function actualizarLista() {
     const div = document.getElementById('container-lotes');
-    div.innerHTML = app.lotes.map((l, i) => {
-        const totU = (l.com * l.est) + l.par;
-        const totC = l.com + (l.par > 0 ? 1 : 0);
-        return `
-            <div class="lote-item ${l.updated ? 'updated' : ''}" style="position:relative;">
-                <button onclick="eliminar(${i})" style="position:absolute; top:10px; right:10px; border:none; background:none; color:#dc3545; font-size:18px;"><i class="fas fa-trash-alt"></i></button>
-                <div style="display:flex; align-items:center; margin-bottom:5px;">
-                    <i class="fas ${l.icon}" style="color:var(--s); margin-right:10px; font-size:20px;"></i><b>${l.id}</b>
-                </div>
-                <div style="font-size:12px; color:#666;">סוג: <b>${l.tipo}</b> | תקן: ${l.est}</div>
-                <div style="display:flex; gap:10px; align-items:center; background:#f1f3f5; padding:8px; border-radius:6px; margin-top:5px;">
-                    ארגזים: <input type="number" class="input-edit" value="${l.com}" onchange="edit(${i},'com',this.value)">
-                    חלקי: <input type="number" class="input-edit" value="${l.par}" onchange="edit(${i},'par',this.value)">
-                </div>
-                <div class="calc-res"><span>סה''כ ארגזים: <b>${totC}</b></span><span>סה''כ יחידות: <b>${totU}</b></span></div>
-            </div>`;
-    }).join('');
+    if (app.lotes.length === 0) {
+        div.innerHTML = "";
+        return;
+    }
+
+    // 1. Agrupar datos por tipo
+    const grupos = {};
+    app.lotes.forEach((l, index) => {
+        if (!grupos[l.tipo]) {
+            grupos[l.tipo] = { lotes: [], totalCajas: 0, totalUnid: 0, icon: l.icon };
+        }
+        grupos[l.tipo].lotes.push({ ...l, originalIndex: index });
+        grupos[l.tipo].totalCajas += (l.com + (l.par > 0 ? 1 : 0));
+        grupos[l.tipo].totalUnid += (l.com * l.est + l.par);
+    });
+
+    // 2. Generar el HTML
+    let htmlFinal = "";
+
+    for (const tipo in grupos) {
+        const g = grupos[tipo];
+        
+        // Encabezado de grupo con Totales
+        htmlFinal += `
+            <div style="background:var(--dark); color:white; padding:8px 12px; border-radius:8px; margin-top:15px; display:flex; justify-content:space-between; align-items:center;">
+                <span><i class="fas ${g.icon}"></i> <b>${tipo.toUpperCase()}</b></span>
+                <span style="font-size:12px;">Cjs Tot: ${g.totalCajas} | Unid: ${g.totalUnid}</span>
+            </div>
+        `;
+
+        // Lotes pertenecientes a este grupo
+        g.lotes.forEach(l => {
+            const totU = (l.com * l.est) + l.par;
+            const totC = l.com + (l.par > 0 ? 1 : 0);
+            htmlFinal += `
+                <div class="lote-item ${l.updated ? 'updated' : ''}" style="margin-top:5px; border-left: 4px solid var(--s);">
+                    <button onclick="eliminar(${l.originalIndex})" style="position:absolute; top:8px; right:8px; border:none; background:none; color:#dc3545;"><i class="fas fa-trash-alt"></i></button>
+                    <b>${l.id}</b> <span style="font-size:11px; color:#888;">(Est: ${l.est})</span>
+                    <div style="margin-top:8px; display:flex; align-items:center; gap:10px;">
+                        <input type="number" class="input-edit" value="${l.com}" onchange="edit(${l.originalIndex},'com',this.value)">
+                        <span style="font-size:13px;">Cjs / Prc:</span>
+                        <input type="number" class="input-edit" value="${l.par}" onchange="edit(${l.originalIndex},'par',this.value)">
+                    </div>
+                </div>`;
+        });
+    }
+
+    div.innerHTML = htmlFinal;
     app.lotes.forEach(l => l.updated = false);
 }
-
 function edit(idx, campo, val) {
     const v = parseInt(val) || 0;
     if(campo === 'par' && v >= app.lotes[idx].est) {
@@ -228,16 +258,53 @@ function aplicarZoom(val) {
 }
 
 function descargarCSV() {
-    if (app.lotes.length === 0) return alert("No hay datos");
-    let csv = "\uFEFFהזמנה;אצווה;סוג;סטנדרטי;ארגזים מלאים;יחידות חלקיות;סה''כ ארגזים (פיזיים);סה''כ יחידות\n";
+    if (app.lotes.length === 0) return alert("No hay datos para exportar");
+
+    const idPedido = document.getElementById('txt-pedido').innerText || "SIN_ID";
+    
+    // 1. Cabecera y Detalle de Lotes
+    let csv = "\uFEFFDETALLE DE LOTES\n";
+    csv += "Pedido,Lote,Tipo,Estándar,Cajas,Parcial,Total Unidades\n";
+
+    // Objeto para calcular los totales por tipo mientras recorremos
+    const resumen = {};
+
     app.lotes.forEach(l => {
-        const totU = (l.com * l.est) + l.par;
-        const totC = l.com + (l.par > 0 ? 1 : 0);
-        csv += `${document.getElementById('txt-pedido').innerText};${l.id};${l.tipo};${l.est};${l.com};${l.par};${totC};${totU}\n`;
+        const totalU = (l.com * l.est) + l.par;
+        const totalC = l.com + (l.par > 0 ? 1 : 0);
+        const tipo = l.tipo || "Caja";
+
+        // Agregar fila de detalle
+        csv += `${idPedido},${l.id},${tipo},${l.est},${l.com},${l.par},${totalU}\n`;
+
+        // Acumular para el resumen
+        if (!resumen[tipo]) {
+            resumen[tipo] = { cjs: 0, unid: 0 };
+        }
+        resumen[tipo].cjs += totalC;
+        resumen[tipo].unid += totalU;
     });
+
+    // 2. Sección de Resumen por Tipo
+    csv += "\n\nRESUMEN POR TIPO DE PRODUCTO\n";
+    csv += "Tipo,Total Cajas,Total Unidades\n";
+
+    for (const tipo in resumen) {
+        csv += `${tipo},${resumen[tipo].cjs},${resumen[tipo].unid}\n`;
+    }
+
+    // 3. Gran Total Final
+    const granTotalCjs = Object.values(resumen).reduce((acc, curr) => acc + curr.cjs, 0);
+    const granTotalUnid = Object.values(resumen).reduce((acc, curr) => acc + curr.unid, 0);
+    
+    csv += `\nTOTAL GENERAL,${granTotalCjs},${granTotalUnid}\n`;
+
+    // Lógica de descarga
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = `Carga_${document.getElementById('txt-pedido').innerText}.csv`;
+    link.setAttribute("download", `Pedido_${idPedido}_Completo.csv`);
+    document.body.appendChild(link);
     link.click();
+    document.body.removeChild(link);
 }

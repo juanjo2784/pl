@@ -112,3 +112,14 @@
     margin-right: 8px;
     color: #555;
 }
+
+.icon-option {
+    display: flex;
+    flex-direction: column; /* Icono arriba, texto abajo */
+    align-items: center;
+    font-size: 10px; /* Tamaño del texto del Value */
+    gap: 5px;
+}
+.icon-option i {
+    font-size: 20px; /* Tamaño del icono */
+}
