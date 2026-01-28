@@ -198,19 +198,40 @@ function actualizarLista() {
 
         // Lotes pertenecientes a este grupo
         g.lotes.forEach(l => {
-            const totU = (l.com * l.est) + l.par;
-            const totC = l.com + (l.par > 0 ? 1 : 0);
+            const totU = (l.com * l.est) + l.par; // Subtotal de unidades de este lote
+            const totC = l.com + (l.par > 0 ? 1 : 0); // Total de cajas (contando la parcial como una)
+            
             htmlFinal += `
-                <div class="lote-item ${l.updated ? 'updated' : ''}" style="margin-top:5px; border-left: 4px solid var(--s);">
-                    <button onclick="eliminar(${l.originalIndex})" style="position:absolute; top:8px; right:8px; border:none; background:none; color:#dc3545;"><i class="fas fa-trash-alt"></i></button>
-                    <b>${l.id}</b> <span style="font-size:11px; color:#888;">(Est: ${l.est})</span>
-                    <div style="margin-top:8px; display:flex; align-items:center; gap:10px;">
-                        <input type="number" class="input-edit" value="${l.com}" onchange="edit(${l.originalIndex},'com',this.value)">
-                        <span style="font-size:13px;">Cjs / Prc:</span>
-                        <input type="number" class="input-edit" value="${l.par}" onchange="edit(${l.originalIndex},'par',this.value)">
+                <div class="lote-item ${l.updated ? 'updated' : ''}" style="margin-top:5px; border-left: 4px solid var(--s); padding: 10px; position: relative;">
+                    <button onclick="eliminar(${l.originalIndex})" style="position:absolute; top:8px; right:8px; border:none; background:none; color:#dc3545;">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                    
+                    <div style="margin-bottom: 5px;">
+                        <b>${l.id}</b> <span style="font-size:11px; color:#888;">(Est: ${l.est})</span>
+                    </div>
+
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <div style="display: flex; flex-direction: column;">
+                            <span style="font-size:10px; color:#666;">Cajas</span>
+                            <input type="number" class="input-edit" value="${l.com}" onchange="edit(${l.originalIndex},'com',this.value)">
+                        </div>
+                        <div style="display: flex; flex-direction: column;">
+                            <span style="font-size:10px; color:#666;">Parcial</span>
+                            <input type="number" class="input-edit" value="${l.par}" onchange="edit(${l.originalIndex},'par',this.value)">
+                        </div>
+                        
+                        <div style="margin-left: auto; text-align: right; background: #f8f9fa; padding: 5px 10px; border-radius: 5px; border: 1px solid #ddd;">
+                            <div style="font-size: 9px; color: #888; text-transform: uppercase;">Subtotal</div>
+                            <div style="font-size: 14px; font-weight: bold; color: var(--dark);">
+                                ${totU} <span style="font-size: 10px; font-weight: normal;">unid.</span>
+                            </div>
+                        </div>
                     </div>
                 </div>`;
         });
+
+
     }
 
     div.innerHTML = htmlFinal;

@@ -123,3 +123,20 @@
 .icon-option i {
     font-size: 20px; /* Tamaño del icono */
 }
+
+/*subtotales por lote */
+.input-edit {
+    width: 60px;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    text-align: center;
+}
+
+.lote-item {
+    transition: background 0.3s ease;
+}
+
+.lote-item.updated {
+    background-color: #d4edda !important; /* Flash verde al actualizar */
+}
