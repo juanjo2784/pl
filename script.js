@@ -147,17 +147,24 @@ function finalizarRegistro(code, cNominal, pNominal) {
         app.memoriaEstandar[code] = est;
     }
 
-    // Guardamos cada entrada como un registro único para poder desglosarlo
-    app.lotes.unshift({
-        id: code,
-        est: est,
-        com: com,
-        par: par,
-        tipo: app.memoriaEstandar[code + "_tipo"] || tipoProductoSeleccionado,
-        icon: app.memoriaEstandar[code + "_icon"] || iconoSeleccionado,
-        updated: true,
-        fecha: new Date().getTime() // Para mantener orden de escaneo
-    });
+    // Buscamos si el lote ya existe
+    let lote = app.lotes.find(l => l.id === code);
+
+    if (lote) {
+        lote.com += com; // Agrupamos cajas completas
+        if (par > 0) lote.listaParciales.push(par); // Listamos parcial individual
+        lote.updated = true;
+    } else {
+        app.lotes.unshift({
+            id: code,
+            est: est,
+            com: com,
+            listaParciales: par > 0 ? [par] : [],
+            tipo: app.memoriaEstandar[code + "_tipo"] || tipoProductoSeleccionado,
+            icon: app.memoriaEstandar[code + "_icon"] || iconoSeleccionado,
+            updated: true
+        });
+    }
     
     actualizarLista();
     cerrarFormulario();
@@ -168,73 +175,68 @@ function actualizarLista() {
     const div = document.getElementById('container-lotes');
     if (app.lotes.length === 0) { div.innerHTML = ""; return; }
 
-    // 1. Agrupar por ID de Lote
-    const gruposPorLote = {};
-    app.lotes.forEach((l, index) => {
-        if (!gruposPorLote[l.id]) {
-            gruposPorLote[l.id] = { 
-                items: [], 
-                totalUnid: 0, 
-                est: l.est, 
-                tipo: l.tipo, 
-                icon: l.icon 
-            };
-        }
-        gruposPorLote[l.id].items.push({ ...l, originalIndex: index });
-        gruposPorLote[l.id].totalUnid += (l.com * l.est + l.par);
-    });
-
     let htmlFinal = "";
 
-    // 2. Generar el HTML basado en tu esquema
-    for (const loteId in gruposPorLote) {
-        const grupo = gruposPorLote[loteId];
-        
-        htmlFinal += `
-            <div class="lote-card" style="background:white; margin-bottom:15px; border-radius:10px; box-shadow:0 2px 5px rgba(0,0,0,0.1); overflow:hidden;">
-                <div style="background:#f1f5f9; padding:10px; border-bottom:2px solid #cbd5e1; display:flex; justify-content:space-between; align-items:center;">
-                    <span><i class="fas ${grupo.icon}"></i> <b>${loteId}</b> <small>(Est: ${fNum(grupo.est)})</small></span>
-                    <span style="color:var(--p); font-weight:bold;">Total: ${fNum(grupo.totalUnid)}</span>
-                </div>
-                
-                <div class="lote-detalles" style="padding:5px;">
-        `;
-
-        grupo.items.forEach(item => {
-            const esParcial = item.par > 0;
-            const subtotal = (item.com * item.est) + item.par;
-            
-            htmlFinal += `
-                <div style="display:flex; align-items:center; padding:8px; border-bottom:1px solid #eee; font-size:14px;">
-                    <button onclick="eliminar(${item.originalIndex})" style="color:#ef4444; border:none; background:none; margin-left:10px;"><i class="fas fa-times"></i></button>
-                    <span style="flex:1; text-align:right;">
-                        ${item.com > 0 ? `<b>${item.com}</b> Cajas` : ''}
-                        ${item.com > 0 && item.par > 0 ? ' + ' : ''}
-                        ${item.par > 0 ? `<span style="color:#f59e0b;"><b>${item.par}</b> Unid. (Parcial)</span>` : ''}
-                    </span>
-                    <span style="width:70px; text-align:left; font-weight:600;">${fNum(subtotal)}</span>
-                </div>
-            `;
-        });
+    app.lotes.forEach((l, idxLote) => {
+        const sumaParciales = l.listaParciales.reduce((a, b) => a + b, 0);
+        const totalUnid = (l.com * l.est) + sumaParciales;
 
         htmlFinal += `
+            <div class="lote-card" style="background:white; margin-bottom:12px; border-radius:12px; border:1px solid #e2e8f0; overflow:hidden;">
+                <div style="background:var(--dark); color:white; padding:10px 15px; display:flex; justify-content:space-between; align-items:center;">
+                    <span><i class="fas ${l.icon}"></i> <b>${l.id}</b> <small>(Est: ${fNum(l.est)})</small></span>
+                    <button onclick="eliminarLote(${idxLote})" style="color:#ff8a8a; border:none; background:none;"><i class="fas fa-trash"></i></button>
+                </div>
+
+                <div style="padding:12px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                        <span style="font-size:14px; color:#444;">📦 ארגזים מלאים (Cajas comp.):</span>
+                        <input type="number" class="input-edit" value="${l.com}" 
+                               style="width:80px; text-align:center; font-weight:bold; border:1px solid var(--p);"
+                               onchange="editCajas(${idxLote}, this.value)">
+                    </div>
+
+                    ${l.listaParciales.length > 0 ? '<div style="border-top:1px dashed #ccc; padding-top:8px;">' : ''}
+                    ${l.listaParciales.map((p, idxPar) => `
+                        <div style="display:flex; justify-content:space-between; font-size:13px; color:#666; margin-bottom:4px; background:#fff9f0; padding:4px 8px; border-radius:4px;">
+                            <span><i class="fas fa-box-open" style="color:#f59e0b"></i> Caja parcial:</span>
+                            <span>
+                                <b>${fNum(p)}</b> Unid. 
+                                <i class="fas fa-times" onclick="eliminarParcial(${idxLote}, ${idxPar})" style="margin-right:8px; color:red; cursor:pointer;"></i>
+                            </span>
+                        </div>
+                    `).join('')}
+                    ${l.listaParciales.length > 0 ? '</div>' : ''}
+
+                    <div style="margin-top:10px; padding-top:8px; border-top:2px solid #eee; display:flex; justify-content:space-between; align-items:center;">
+                        <b style="color:#666;">Total Unid:</b>
+                        <b style="font-size:18px; color:var(--p);">${fNum(totalUnid)}</b>
+                    </div>
                 </div>
             </div>
         `;
-    }
+    });
 
     div.innerHTML = htmlFinal;
-    // Efecto visual de actualizado
-    setTimeout(() => { app.lotes.forEach(l => l.updated = false); }, 1000);
 }
 // --- FUNCIONES AUXILIARES ---
-function edit(idx, campo, val) {
-    app.lotes[idx][campo] = parseInt(val) || 0;
+function editCajas(idx, val) {
+    app.lotes[idx].com = parseInt(val) || 0;
     actualizarLista();
 }
 
-function eliminar(idx) {
-    if(confirm("למחוק שורה זו?")) { app.lotes.splice(idx, 1); actualizarLista(); }
+function eliminarParcial(idxLote, idxPar) {
+    if(confirm("¿Eliminar esta caja parcial?")) {
+        app.lotes[idxLote].listaParciales.splice(idxPar, 1);
+        actualizarLista();
+    }
+}
+
+function eliminarLote(idx) {
+    if(confirm("¿Eliminar TODO el lote?")) {
+        app.lotes.splice(idx, 1);
+        actualizarLista();
+    }
 }
 
 function cerrarFormulario() {
