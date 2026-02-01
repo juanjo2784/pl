@@ -73,15 +73,21 @@ function mostrarFormulario(code) {
     const fields = document.getElementById('dynamic-fields');
     const est = app.memoriaEstandar[code] || "";
 
-    const htmlIconos = `
-        <label style="display:block; font-size:12px; color:#666; margin-top:10px;">סוג מוצר</label>
-        <div class="icon-selector">
-            <div class="icon-option selected" onclick="selectIcon(this, 'fa-box', 'ארגז')"><i class="fas fa-box"></i><span>ארגז</span></div>
-            <div class="icon-option" onclick="selectIcon(this, 'fa-file-alt', 'עלון')"><i class="fas fa-file-alt"></i><span>עלון</span></div>
-            <div class="icon-option" onclick="selectIcon(this, 'fa-tags', 'מדבקה')"><i class="fas fa-tags"></i><span>מדבקה</span></div>
-            <div class="icon-option" onclick="selectIcon(this, 'fa-shield-alt', 'T.E')"><i class="fas fa-shield-alt"></i><span>TE</span></div>
-        </div>
-    `;
+    const htmlCantidades = `
+    <div style="margin-top:15px;">
+        <label style="display:block; font-size:12px; color:#666;">Cajas Completas</label>
+        <input type="text" id="input-cajas" 
+               class="input-grande" 
+               placeholder="0" 
+               oninput="formatearInputMiles(this)">
+        
+        <label style="display:block; font-size:12px; color:#666; margin-top:10px;">Unidades Parciales</label>
+        <input type="text" id="input-parcial" 
+               class="input-grande" 
+               placeholder="0" 
+               oninput="formatearInputMiles(this)">
+    </div>
+`;
 
     if(app.modo === 'rapido') {
         fields.innerHTML = `
@@ -133,6 +139,13 @@ function capturarParcialBtn(code) {
     finalizarRegistro(code, 0, pVal);
 }
 
+function limpiarPuntos(id) {
+    const el = document.getElementById(id);
+    if (!el) return 0;
+    // Quita los puntos y convierte a entero
+    return parseInt(el.value.replace(/\./g, '')) || 0;
+}
+
 // --- FINALIZAR REGISTRO CORREGIDO ---
 function finalizarRegistro(code, cNominal, pNominal) {
     let est = app.memoriaEstandar[code];
@@ -140,32 +153,40 @@ function finalizarRegistro(code, cNominal, pNominal) {
     let par = 0;
 
     if (app.modo === 'rapido') {
-        est = parseInt(document.getElementById('f-est').value);
-        com = parseInt(document.getElementById('f-com').value) || 0;
-        par = parseInt(document.getElementById('f-par').value) || 0;
+        // --- AQUÍ ESTÁ EL CAMBIO CLAVE ---
+        // Leemos el estándar (fijo) y limpiamos los puntos de cajas y parciales
+        est = parseInt(document.getElementById('f-est').value) || 0;
+        com = limpiarPuntos('f-com'); 
+        par = limpiarPuntos('f-par');
+        
         // Guardar memoria si es nuevo
         app.memoriaEstandar[code] = est;
     } else {
-        com = cNominal || 0;
-        par = pNominal || 0;
+        // Si vienen de los parámetros (como clics directos), aseguramos que sean números
+        com = parseInt(cNominal) || 0;
+        par = parseInt(pNominal) || 0;
     }
 
     const idx = app.lotes.findIndex(l => l.id === code);
 
     if (idx !== -1) {
+        // Lógica para múltiples parciales
         if (app.lotes[idx].par > 0 && par > 0) {
             alert(`⚠️ התגלתה חריגה באצווה ${code}. היחידות יתווספו לסך הכל.`);
         }
+        
         app.lotes[idx].com += com;
         app.lotes[idx].par += par;
         app.lotes[idx].updated = true;
         
-        if (app.lotes[idx].par >= est) {
+        // Auto-conversión si el parcial supera el estándar
+        if (app.lotes[idx].par >= est && est > 0) {
             const cajasExtras = Math.floor(app.lotes[idx].par / est);
             app.lotes[idx].com += cajasExtras;
             app.lotes[idx].par = app.lotes[idx].par % est;
         }
     } else {
+        // Registro nuevo
         app.lotes.unshift({
             id: code,
             est: est,
@@ -176,6 +197,7 @@ function finalizarRegistro(code, cNominal, pNominal) {
             updated: true
         });
     }
+
     actualizarLista();
     cerrarFormulario();
 }
@@ -257,4 +279,24 @@ function descargarCSV() {
     link.href = URL.createObjectURL(blob);
     link.download = `Pedido_${idPedido}.csv`;
     link.click();
+}
+
+function formatearInputMiles(input) {
+    // 1. Quitar todo lo que no sea número
+    let valor = input.value.replace(/\D/g, "");
+    
+    // 2. Si está vacío, dejar vacío
+    if (valor === "") {
+        input.value = "";
+        return;
+    }
+
+    // 3. Formatear con puntos de miles
+    input.value = new Intl.NumberFormat('es-ES').format(valor);
+}
+
+// Función auxiliar para obtener el número puro (sin puntos) antes de guardar
+function obtenerValorNumerico(idInput) {
+    const val = document.getElementById(idInput).value;
+    return parseInt(val.replace(/\D/g, "")) || 0;
 }

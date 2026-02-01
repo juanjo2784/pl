@@ -178,3 +178,19 @@
     z-index: 2;
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
+
+.input-grande {
+    width: 100%;
+    padding: 12px;
+    font-size: 20px; /* Número grande para evitar errores de vista */
+    font-weight: bold;
+    text-align: right; /* Alineado a la derecha como en las calculadoras */
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    box-sizing: border-box;
+}
+
+.input-grande:focus {
+    border-color: var(--s); /* Resalta el color de tu marca al escribir */
+    outline: none;
+}
