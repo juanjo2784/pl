@@ -134,6 +134,7 @@ function capturarParcialBtn(code) {
 }
 
 // --- LOGICA DE REGISTRO (CORREGIDA) ---
+// --- REGISTRO ---
 function finalizarRegistro(code, cNominal, pNominal) {
     let est = app.memoriaEstandar[code];
     let com = cNominal || 0;
@@ -146,89 +147,86 @@ function finalizarRegistro(code, cNominal, pNominal) {
         app.memoriaEstandar[code] = est;
     }
 
-    // SI ES PARCIAL: Siempre agregar como línea nueva para evitar errores de suma
-    if (par > 0) {
-        app.lotes.unshift({
-            id: code,
-            est: est,
-            com: 0,
-            par: par,
-            tipo: app.memoriaEstandar[code + "_tipo"] || tipoProductoSeleccionado,
-            icon: app.memoriaEstandar[code + "_icon"] || iconoSeleccionado,
-            updated: true
-        });
-    } else {
-        // SI ES COMPLETA: Intentar agrupar con la última entrada de cajas completas del mismo lote
-        const idx = app.lotes.findIndex(l => l.id === code && l.par === 0);
-        if (idx !== -1) {
-            app.lotes[idx].com += com;
-            app.lotes[idx].updated = true;
-        } else {
-            app.lotes.unshift({
-                id: code,
-                est: est,
-                com: com,
-                par: 0,
-                tipo: app.memoriaEstandar[code + "_tipo"] || tipoProductoSeleccionado,
-                icon: app.memoriaEstandar[code + "_icon"] || iconoSeleccionado,
-                updated: true
-            });
-        }
-    }
+    // Guardamos cada entrada como un registro único para poder desglosarlo
+    app.lotes.unshift({
+        id: code,
+        est: est,
+        com: com,
+        par: par,
+        tipo: app.memoriaEstandar[code + "_tipo"] || tipoProductoSeleccionado,
+        icon: app.memoriaEstandar[code + "_icon"] || iconoSeleccionado,
+        updated: true,
+        fecha: new Date().getTime() // Para mantener orden de escaneo
+    });
     
     actualizarLista();
     cerrarFormulario();
 }
 
+// --- LISTA AGRUPADA POR LOTE ---
 function actualizarLista() {
     const div = document.getElementById('container-lotes');
     if (app.lotes.length === 0) { div.innerHTML = ""; return; }
 
-    const grupos = {};
+    // 1. Agrupar por ID de Lote
+    const gruposPorLote = {};
     app.lotes.forEach((l, index) => {
-        if (!grupos[l.tipo]) {
-            grupos[l.tipo] = { lotes: [], totalCajasFisicas: 0, totalUnid: 0, icon: l.icon };
+        if (!gruposPorLote[l.id]) {
+            gruposPorLote[l.id] = { 
+                items: [], 
+                totalUnid: 0, 
+                est: l.est, 
+                tipo: l.tipo, 
+                icon: l.icon 
+            };
         }
-        grupos[l.tipo].lotes.push({ ...l, originalIndex: index });
-        // Sumamos 1 caja física si hay parcial, o la cantidad de cajas completas
-        grupos[l.tipo].totalCajasFisicas += (l.com + (l.par > 0 ? 1 : 0));
-        grupos[l.tipo].totalUnid += (l.com * l.est + l.par);
+        gruposPorLote[l.id].items.push({ ...l, originalIndex: index });
+        gruposPorLote[l.id].totalUnid += (l.com * l.est + l.par);
     });
 
     let htmlFinal = "";
-    for (const tipo in grupos) {
-        const g = grupos[tipo];
+
+    // 2. Generar el HTML basado en tu esquema
+    for (const loteId in gruposPorLote) {
+        const grupo = gruposPorLote[loteId];
+        
         htmlFinal += `
-            <div class="grupo-encabezado" style="background:var(--dark); color:white; padding:8px 12px; border-radius:8px; margin-top:15px; display:flex; justify-content:space-between; align-items:center;">
-                <span><i class="fas ${g.icon}"></i> <b>${tipo}</b></span>
-                <span style="font-size:12px; text-align:left;">ארגזים: ${fNum(g.totalCajasFisicas)} <br> יחידות: ${fNum(g.totalUnid)}</span>
-            </div>
+            <div class="lote-card" style="background:white; margin-bottom:15px; border-radius:10px; box-shadow:0 2px 5px rgba(0,0,0,0.1); overflow:hidden;">
+                <div style="background:#f1f5f9; padding:10px; border-bottom:2px solid #cbd5e1; display:flex; justify-content:space-between; align-items:center;">
+                    <span><i class="fas ${grupo.icon}"></i> <b>${loteId}</b> <small>(Est: ${fNum(grupo.est)})</small></span>
+                    <span style="color:var(--p); font-weight:bold;">Total: ${fNum(grupo.totalUnid)}</span>
+                </div>
+                
+                <div class="lote-detalles" style="padding:5px;">
         `;
 
-        g.lotes.forEach(l => {
-            const totU = (l.com * l.est) + l.par;
-            const esParcial = l.par > 0;
+        grupo.items.forEach(item => {
+            const esParcial = item.par > 0;
+            const subtotal = (item.com * item.est) + item.par;
+            
             htmlFinal += `
-                <div class="lote-item ${l.updated ? 'updated' : ''}" style="border-left:4px solid ${esParcial ? '#f59e0b' : 'var(--s)'}; padding:10px; background:white; margin-top:5px; position:relative;">
-                    <button onclick="eliminar(${l.originalIndex})" style="position:absolute; right:10px; color:#ef4444; border:none; background:none; font-size:18px;"><i class="fas fa-trash"></i></button>
-                    <b>${l.id}</b> <small style="color:#666;">(Est: ${fNum(l.est)})</small>
-                    <div style="display:flex; gap:10px; margin-top:5px; align-items:center;">
-                        <div style="flex:1">
-                           <small>${esParcial ? 'יחידות חלקיות' : 'ארגזים'}</small><br>
-                           <input type="number" class="input-edit" value="${esParcial ? l.par : l.com}" onchange="edit(${l.originalIndex},'${esParcial ? 'par' : 'com'}',this.value)">
-                        </div>
-                        <div style="margin-left:auto; text-align:right; min-width:80px;">
-                            <small>סה"כ יחידות</small><br>
-                            <b style="color:var(--p);">${fNum(totU)}</b>
-                        </div>
-                    </div>
-                </div>`;
+                <div style="display:flex; align-items:center; padding:8px; border-bottom:1px solid #eee; font-size:14px;">
+                    <button onclick="eliminar(${item.originalIndex})" style="color:#ef4444; border:none; background:none; margin-left:10px;"><i class="fas fa-times"></i></button>
+                    <span style="flex:1; text-align:right;">
+                        ${item.com > 0 ? `<b>${item.com}</b> Cajas` : ''}
+                        ${item.com > 0 && item.par > 0 ? ' + ' : ''}
+                        ${item.par > 0 ? `<span style="color:#f59e0b;"><b>${item.par}</b> Unid. (Parcial)</span>` : ''}
+                    </span>
+                    <span style="width:70px; text-align:left; font-weight:600;">${fNum(subtotal)}</span>
+                </div>
+            `;
         });
+
+        htmlFinal += `
+                </div>
+            </div>
+        `;
     }
+
     div.innerHTML = htmlFinal;
+    // Efecto visual de actualizado
     setTimeout(() => { app.lotes.forEach(l => l.updated = false); }, 1000);
 }
-
 // --- FUNCIONES AUXILIARES ---
 function edit(idx, campo, val) {
     app.lotes[idx][campo] = parseInt(val) || 0;
