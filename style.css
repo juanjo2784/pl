@@ -150,10 +150,18 @@
     border: 1px solid #eee;
     border-radius: 8px;
     margin-top: 10px;
-    
+    min-height: auto;
     /* Personalización de la barra de desplazamiento (Scrollbar) */
     scrollbar-width: thin;
+    flex: 1;               /* Esto hace que la lista tome todo el espacio sobrante */
+    overflow-y: auto;      /* Permite scroll si la lista es muy larga */
     scrollbar-color: var(--s) #f0f0f0;
+}
+
+.main-content {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
 }
 
 /* Estilo para navegadores Chrome/Safari (celulares Android/iOS) */
