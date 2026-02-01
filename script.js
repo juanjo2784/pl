@@ -6,10 +6,11 @@ let app = {
 };
 let iconoSeleccionado = "fa-box"; 
 let tipoProductoSeleccionado = "ארגז"; 
-let torchEnabled = false;
 
-// Auxiliar para formato de miles
-const fNum = (n) => Number(n || 0).toLocaleString('es-ES');
+// Auxiliar para formato de miles (español usa punto para miles)
+const fNum = (n) => {
+    return new Intl.NumberFormat('es-ES').format(n || 0);
+};
 
 // --- INICIO ---
 function iniciarApp(m) {
@@ -28,7 +29,7 @@ function selectIcon(el, iconName, tipoNombre) {
     tipoProductoSeleccionado = tipoNombre;
 }
 
-// --- ESCANEO ---
+// --- ESCANEO (Se mantiene igual) ---
 function activarEscaneo() {
     document.getElementById('overlay-scanner').classList.remove('hidden');
     document.getElementById('form-scanner').classList.add('hidden');
@@ -39,16 +40,12 @@ function activarEscaneo() {
             name: "Live",
             type: "LiveStream",
             target: document.querySelector('#interactive'),
-            constraints: {
-                width: { min: 1280 },
-                height: { min: 720 },
-                facingMode: "environment"
-            },
+            constraints: { width: { min: 1280 }, height: { min: 720 }, facingMode: "environment" },
             area: { top: "40%", right: "10%", left: "10%", bottom: "40%" }
         },
         decoder: { readers: ["code_128_reader", "ean_reader"] }
     }, (err) => { 
-        if (err) return alert("Error de cámara: " + err);
+        if (err) return alert("Error de cámara");
         Quagga.start(); 
     });
 }
@@ -66,7 +63,6 @@ function procesarCapturaManual() {
     mostrarFormulario(app.ultimoCodigo);
 }
 
-// --- FORMULARIO CORREGIDO ---
 function mostrarFormulario(code) {
     document.getElementById('form-scanner').classList.remove('hidden');
     document.getElementById('txt-lote-det').innerText = "אצווה: " + code;
@@ -86,6 +82,7 @@ function mostrarFormulario(code) {
             <div class="icon-option" onclick="selectIcon(this, 'fa-folder', 'חומר 3')"><i class="fas fa-folder"></i><span>חומר 3</span></div>
         </div>
     `;
+
     if(app.modo === 'rapido') {
         fields.innerHTML = `
             ${!est ? htmlIconos : ''}
@@ -136,54 +133,53 @@ function capturarParcialBtn(code) {
     finalizarRegistro(code, 0, pVal);
 }
 
-// --- FINALIZAR REGISTRO CORREGIDO ---
+// --- LOGICA DE REGISTRO (CORREGIDA) ---
 function finalizarRegistro(code, cNominal, pNominal) {
     let est = app.memoriaEstandar[code];
-    let com = 0;
-    let par = 0;
+    let com = cNominal || 0;
+    let par = pNominal || 0;
 
     if (app.modo === 'rapido') {
         est = parseInt(document.getElementById('f-est').value);
         com = parseInt(document.getElementById('f-com').value) || 0;
         par = parseInt(document.getElementById('f-par').value) || 0;
-        // Guardar memoria si es nuevo
         app.memoriaEstandar[code] = est;
-    } else {
-        com = cNominal || 0;
-        par = pNominal || 0;
     }
 
-    const idx = app.lotes.findIndex(l => l.id === code);
-
-    if (idx !== -1) {
-        if (app.lotes[idx].par > 0 && par > 0) {
-            alert(`⚠️ התגלתה חריגה באצווה ${code}. היחידות יתווספו לסך הכל.`);
-        }
-        app.lotes[idx].com += com;
-        app.lotes[idx].par += par;
-        app.lotes[idx].updated = true;
-        
-        if (app.lotes[idx].par >= est) {
-            const cajasExtras = Math.floor(app.lotes[idx].par / est);
-            app.lotes[idx].com += cajasExtras;
-            app.lotes[idx].par = app.lotes[idx].par % est;
-        }
-    } else {
+    // SI ES PARCIAL: Siempre agregar como línea nueva para evitar errores de suma
+    if (par > 0) {
         app.lotes.unshift({
             id: code,
             est: est,
-            com: com,
+            com: 0,
             par: par,
             tipo: app.memoriaEstandar[code + "_tipo"] || tipoProductoSeleccionado,
             icon: app.memoriaEstandar[code + "_icon"] || iconoSeleccionado,
             updated: true
         });
+    } else {
+        // SI ES COMPLETA: Intentar agrupar con la última entrada de cajas completas del mismo lote
+        const idx = app.lotes.findIndex(l => l.id === code && l.par === 0);
+        if (idx !== -1) {
+            app.lotes[idx].com += com;
+            app.lotes[idx].updated = true;
+        } else {
+            app.lotes.unshift({
+                id: code,
+                est: est,
+                com: com,
+                par: 0,
+                tipo: app.memoriaEstandar[code + "_tipo"] || tipoProductoSeleccionado,
+                icon: app.memoriaEstandar[code + "_icon"] || iconoSeleccionado,
+                updated: true
+            });
+        }
     }
+    
     actualizarLista();
     cerrarFormulario();
 }
 
-// --- LISTA ---
 function actualizarLista() {
     const div = document.getElementById('container-lotes');
     if (app.lotes.length === 0) { div.innerHTML = ""; return; }
@@ -191,10 +187,11 @@ function actualizarLista() {
     const grupos = {};
     app.lotes.forEach((l, index) => {
         if (!grupos[l.tipo]) {
-            grupos[l.tipo] = { lotes: [], totalCajas: 0, totalUnid: 0, icon: l.icon };
+            grupos[l.tipo] = { lotes: [], totalCajasFisicas: 0, totalUnid: 0, icon: l.icon };
         }
         grupos[l.tipo].lotes.push({ ...l, originalIndex: index });
-        grupos[l.tipo].totalCajas += (l.com + (l.par > 0 ? 1 : 0));
+        // Sumamos 1 caja física si hay parcial, o la cantidad de cajas completas
+        grupos[l.tipo].totalCajasFisicas += (l.com + (l.par > 0 ? 1 : 0));
         grupos[l.tipo].totalUnid += (l.com * l.est + l.par);
     });
 
@@ -202,41 +199,44 @@ function actualizarLista() {
     for (const tipo in grupos) {
         const g = grupos[tipo];
         htmlFinal += `
-            <div class="grupo-encabezado" style="background:var(--dark); color:white; padding:8px 12px; border-radius:8px; margin-top:15px; display:flex; justify-content:space-between;">
+            <div class="grupo-encabezado" style="background:var(--dark); color:white; padding:8px 12px; border-radius:8px; margin-top:15px; display:flex; justify-content:space-between; align-items:center;">
                 <span><i class="fas ${g.icon}"></i> <b>${tipo}</b></span>
-                <span style="font-size:12px;">ארגזים: ${fNum(g.totalCajas)} | יחידות: ${fNum(g.totalUnid)}</span>
+                <span style="font-size:12px; text-align:left;">ארגזים: ${fNum(g.totalCajasFisicas)} <br> יחידות: ${fNum(g.totalUnid)}</span>
             </div>
         `;
 
         g.lotes.forEach(l => {
             const totU = (l.com * l.est) + l.par;
+            const esParcial = l.par > 0;
             htmlFinal += `
-                <div class="lote-item ${l.updated ? 'updated' : ''}" style="border-left:4px solid var(--s); padding:10px; background:white; margin-top:5px; position:relative;">
-                    <button onclick="eliminar(${l.originalIndex})" style="position:absolute; right:10px; color:red; border:none; background:none;"><i class="fas fa-trash"></i></button>
-                    <b>${l.id}</b> <small>(Est: ${fNum(l.est)})</small>
-                    <div style="display:flex; gap:10px; margin-top:5px;">
-                        <input type="number" class="input-edit" value="${l.com}" onchange="edit(${l.originalIndex},'com',this.value)">
-                        <input type="number" class="input-edit" value="${l.par}" onchange="edit(${l.originalIndex},'par',this.value)">
-                        <div style="margin-left:auto; text-align:right;">
-                            <small>SUBTOTAL</small><br>
-                            <b>${fNum(totU)}</b>
+                <div class="lote-item ${l.updated ? 'updated' : ''}" style="border-left:4px solid ${esParcial ? '#f59e0b' : 'var(--s)'}; padding:10px; background:white; margin-top:5px; position:relative;">
+                    <button onclick="eliminar(${l.originalIndex})" style="position:absolute; right:10px; color:#ef4444; border:none; background:none; font-size:18px;"><i class="fas fa-trash"></i></button>
+                    <b>${l.id}</b> <small style="color:#666;">(Est: ${fNum(l.est)})</small>
+                    <div style="display:flex; gap:10px; margin-top:5px; align-items:center;">
+                        <div style="flex:1">
+                           <small>${esParcial ? 'יחידות חלקיות' : 'ארגזים'}</small><br>
+                           <input type="number" class="input-edit" value="${esParcial ? l.par : l.com}" onchange="edit(${l.originalIndex},'${esParcial ? 'par' : 'com'}',this.value)">
+                        </div>
+                        <div style="margin-left:auto; text-align:right; min-width:80px;">
+                            <small>סה"כ יחידות</small><br>
+                            <b style="color:var(--p);">${fNum(totU)}</b>
                         </div>
                     </div>
                 </div>`;
         });
     }
     div.innerHTML = htmlFinal;
-    div.scrollTop = 0; // Llevar arriba para ver el nuevo
     setTimeout(() => { app.lotes.forEach(l => l.updated = false); }, 1000);
 }
 
+// --- FUNCIONES AUXILIARES ---
 function edit(idx, campo, val) {
     app.lotes[idx][campo] = parseInt(val) || 0;
     actualizarLista();
 }
 
 function eliminar(idx) {
-    if(confirm("למחוק?")) { app.lotes.splice(idx, 1); actualizarLista(); }
+    if(confirm("למחוק שורה זו?")) { app.lotes.splice(idx, 1); actualizarLista(); }
 }
 
 function cerrarFormulario() {
@@ -245,19 +245,18 @@ function cerrarFormulario() {
 }
 
 function descargarCSV() {
-    if (app.lotes.length === 0) return alert("אין נתונים.");
-    const idPedido = document.getElementById('txt-pedido').innerText;
-    let csv = "\uFEFFהזמנה: " + idPedido + "\n";
-    csv += "אצווה,סוג,סטנדרט,קופסאות,חלקי,סה''כ\n";
-
+    if (app.lotes.length === 0) return alert("No hay datos");
+    const idPedido = document.getElementById('txt-pedido').innerText || "SIN_ID";
+    let csv = "\uFEFFReporte Inventario\nPedido: " + idPedido + "\n\n";
+    csv += "Lote,Tipo,Estandar,Cajas Completas,Unid. Parciales,Subtotal Unidades\n";
+    
     app.lotes.forEach(l => {
-        const tot = (l.com * l.est) + l.par;
-        csv += `${l.id},${l.tipo},${l.est},${l.com},${l.par},${tot}\n`;
+        csv += `${l.id},${l.tipo},${l.est},${l.com},${l.par},${(l.com*l.est)+l.par}\n`;
     });
 
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = `Pedido_${idPedido}.csv`;
+    link.download = `Inventario_${idPedido}.csv`;
     link.click();
 }
