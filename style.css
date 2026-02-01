@@ -169,3 +169,54 @@
 #container-lotes::-webkit-scrollbar-track {
     background: #f0f0f0;
 }
+
+/* Aseguramos que el cuerpo no tenga scroll exterior */
+body {
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; 
+}
+
+/* Configuramos la pantalla principal como un contenedor flex */
+#screen-main {
+    display: flex;
+    flex-direction: column;
+    height: 100vh; /* Ocupa el total de la pantalla */
+    width: 100%;
+}
+
+/* El encabezado mantiene su tamaño fijo */
+.header-pedido {
+    flex-shrink: 0;
+    padding: 15px;
+    background: var(--dark);
+    color: white;
+    text-align: center;
+}
+
+/* LA CLAVE: El contenedor de la lista crece para llenar el vacío */
+.list-container {
+    flex-grow: 1; 
+    overflow-y: auto; /* Solo esta parte tendrá scroll */
+    padding: 10px;
+    background-color: #f8fafc;
+    -webkit-overflow-scrolling: touch; /* Suavidad en iOS */
+}
+
+/* El footer se mantiene siempre abajo sin moverse */
+.nav-footer {
+    flex-shrink: 0;
+    height: 70px;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    background: white;
+    border-top: 1px solid #ddd;
+}
+
+#screen-main:not(.hidden) {
+    display: flex !important;
+}
