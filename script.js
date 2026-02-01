@@ -130,37 +130,42 @@ function definirEst(code) {
 }
 
 function finalizarRegistro(code, cNominal, pNominal) {
-    const inputEst = document.getElementById('f-est');
-    const est = app.memoriaEstandar[code] || (inputEst ? parseInt(inputEst.value) : 0);
-    if(!est) return alert("עליך להגדיר כמות סטנדרטית");
-
-    if(!app.memoriaEstandar[code]) {
-        app.memoriaEstandar[code] = est;
-        app.memoriaEstandar[code + "_icon"] = iconoSeleccionado;
-        app.memoriaEstandar[code + "_tipo"] = tipoProductoSeleccionado;
-    }
-
-    const icon = app.memoriaEstandar[code + "_icon"];
-    const tipo = app.memoriaEstandar[code + "_tipo"];
-    let com = cNominal !== undefined ? cNominal : (parseInt(document.getElementById('f-com')?.value) || 0);
-    let par = pNominal !== undefined ? pNominal : (parseInt(document.getElementById('f-par')?.value) || 0);
-
-    if (par >= est) return alert("חורג חלקית מהתקן");
-
+    const est = parseInt(cNominal);
+    const par = parseInt(pNominal);
     const idx = app.lotes.findIndex(l => l.id === code);
+
     if (idx !== -1) {
-        app.lotes[idx].com += com;
-        app.lotes[idx].par += par;
-        if (app.lotes[idx].par >= est) {
-            app.lotes[idx].com += Math.floor(app.lotes[idx].par / est);
-            app.lotes[idx].par = app.lotes[idx].par % est;
+        // --- LOGICA PARA MULTIPLES PARCIALES ---
+        if (app.lotes[idx].par > 0 && par > 0) {
+            // Si ya había un parcial y estamos metiendo otro
+            alert(`⚠️ Aviso: Se ha detectado una SEGUNDA caja parcial para el lote ${code}. Las unidades se sumarán al total del lote.`);
         }
+
+        app.lotes[idx].com += parseInt(document.getElementById('input-cajas').value || 0);
+        app.lotes[idx].par += par; // Sumamos el nuevo parcial al anterior
         app.lotes[idx].updated = true;
+        
+        // Si la suma de parciales supera el estándar, convertimos a caja completa
+        if (app.lotes[idx].par >= est) {
+            const cajasExtras = Math.floor(app.lotes[idx].par / est);
+            app.lotes[idx].com += cajasExtras;
+            app.lotes[idx].par = app.lotes[idx].par % est;
+            alert(`ℹ️ Los parciales acumulados completaron ${cajasExtras} caja(s) llena(s).`);
+        }
     } else {
-        app.lotes.unshift({ id: code, est: est, com: com, par: par, icon: icon, tipo: tipo, updated: true });
+        // Registro nuevo (primera vez)
+        app.lotes.unshift({
+            id: code,
+            est: est,
+            com: parseInt(document.getElementById('input-cajas').value || 0),
+            par: par,
+            tipo: tipoProductoSeleccionado,
+            icon: iconoSeleccionado,
+            updated: false
+        });
     }
     actualizarLista();
-    cerrarEscaner();
+    cerrarFormulario();
 }
 
 // --- LISTA Y EDICIÓN ---
@@ -200,7 +205,11 @@ function actualizarLista() {
         g.lotes.forEach(l => {
             const totU = (l.com * l.est) + l.par; // Subtotal de unidades de este lote
             const totC = l.com + (l.par > 0 ? 1 : 0); // Total de cajas (contando la parcial como una)
-            
+            const tieneMultiplesParciales = l.par > 0 && l.com > 0; //
+            const totUFormateado = totU.toLocaleString('es-ES'); 
+            const estFormateado = l.est.toLocaleString('es-ES');
+
+
             htmlFinal += `
                 <div class="lote-item ${l.updated ? 'updated' : ''}" style="margin-top:5px; border-left: 4px solid var(--s); padding: 10px; position: relative;">
                     <button onclick="eliminar(${l.originalIndex})" style="position:absolute; top:8px; right:8px; border:none; background:none; color:#dc3545;">
@@ -208,7 +217,7 @@ function actualizarLista() {
                     </button>
                     
                     <div style="margin-bottom: 5px;">
-                        <b>${l.id}</b> <span style="font-size:11px; color:#888;">(Est: ${l.est})</span>
+                        <b>${l.id}</b> <span style="font-size:11px; color:#888;">(Est: ${estFormateado})</span>
                     </div>
 
                     <div style="display:flex; align-items:center; gap:10px;">
@@ -223,20 +232,31 @@ function actualizarLista() {
                         
                         <div style="margin-left: auto; text-align: right; background: #f8f9fa; padding: 5px 10px; border-radius: 5px; border: 1px solid #ddd;">
                             <div style="font-size: 9px; color: #888; text-transform: uppercase;">Subtotal</div>
+
+                            ${l.par > l.est ? `<span style="color:orange; font-size:10px;"><i class="fas fa-exclamation-triangle"></i> Parcial acumulado</span>` : ''}
+
                             <div style="font-size: 14px; font-weight: bold; color: var(--dark);">
-                                ${totU} <span style="font-size: 10px; font-weight: normal;">unid.</span>
+                                ${totUFormateado} <span style="font-size: 10px; font-weight: normal;">unid.</span>
                             </div>
                         </div>
                     </div>
                 </div>`;
         });
+    
+    const div = document.getElementById('container-lotes');
+    div.innerHTML = htmlFinal;
 
+    // AUTO-SCROLL: Lleva la barra al principio para ver el último escaneo
+    div.scrollTop = 0;
 
     }
 
     div.innerHTML = htmlFinal;
     app.lotes.forEach(l => l.updated = false);
+    
 }
+
+
 function edit(idx, campo, val) {
     const v = parseInt(val) || 0;
     if(campo === 'par' && v >= app.lotes[idx].est) {

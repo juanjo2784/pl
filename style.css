@@ -139,4 +139,42 @@
 
 .lote-item.updated {
     background-color: #d4edda !important; /* Flash verde al actualizar */
+
+}
+
+#container-lotes {
+    max-height: 400px; /* Altura máxima antes de mostrar la barra */
+    overflow-y: auto;  /* Habilita el scroll vertical */
+    padding: 10px;
+    background: #fdfdfd;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    margin-top: 10px;
+    
+    /* Personalización de la barra de desplazamiento (Scrollbar) */
+    scrollbar-width: thin;
+    scrollbar-color: var(--s) #f0f0f0;
+}
+
+/* Estilo para navegadores Chrome/Safari (celulares Android/iOS) */
+#container-lotes::-webkit-scrollbar {
+    width: 6px;
+}
+
+#container-lotes::-webkit-scrollbar-thumb {
+    background-color: var(--s); /* Color de tu marca */
+    border-radius: 10px;
+}
+
+#container-lotes::-webkit-scrollbar-track {
+    background: #f0f0f0;
+}
+
+/* Esto hará que el título del grupo (Cajas, Folletos...) se quede pegado arriba 
+   mientras haces scroll dentro de sus items */
+.grupo-encabezado {
+    position: sticky;
+    top: -10px; /* Se ajusta al borde superior del contenedor */
+    z-index: 2;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
