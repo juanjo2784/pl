@@ -158,6 +158,11 @@
     scrollbar-color: var(--s) #f0f0f0;
 }
 
+.main-content {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
 
 /* Estilo para navegadores Chrome/Safari (celulares Android/iOS) */
 #container-lotes::-webkit-scrollbar {
