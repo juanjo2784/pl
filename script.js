@@ -182,35 +182,33 @@ function actualizarLista() {
         const totalUnid = (l.com * l.est) + sumaParciales;
 
         htmlFinal += `
-            <div class="lote-card" style="background:white; margin-bottom:12px; border-radius:12px; border:1px solid #e2e8f0; overflow:hidden;">
-                <div style="background:var(--dark); color:white; padding:10px 15px; display:flex; justify-content:space-between; align-items:center;">
-                    <span><i class="fas ${l.icon}"></i> <b>${l.id}</b> <small>(Est: ${fNum(l.est)})</small></span>
-                    <button onclick="eliminarLote(${idxLote})" style="color:#ff8a8a; border:none; background:none;"><i class="fas fa-trash"></i></button>
+            <div class="lote-card" style="background:white; margin-bottom:10px; border-radius:8px; border:1px solid #ddd; overflow:hidden;">
+                <div style="background:#2d2d2d; color:white; padding:10px; display:flex; justify-content:space-between;">
+                    <span><i class="fas fa-file-alt"></i> <b>${l.id}</b> <small>(Est: ${fNum(l.est)})</small></span>
+                    <i class="fas fa-trash" onclick="eliminarLote(${idxLote})" style="color:#f87171; cursor:pointer;"></i>
                 </div>
 
-                <div style="padding:12px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                        <span style="font-size:14px; color:#444;">📦 ארגזים מלאים (Cajas comp.):</span>
-                        <input type="number" class="input-edit" value="${l.com}" 
-                               style="width:80px; text-align:center; font-weight:bold; border:1px solid var(--p);"
-                               onchange="editCajas(${idxLote}, this.value)">
+                <div style="padding:10px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                        <span style="font-size:14px;"><i class="fas fa-box" style="color:#d97706"></i> ארגזים מלאים (Cajas comp.):</span>
+                        <input type="number" value="${l.com}" 
+                               onchange="editCajas(${idxLote}, this.value)"
+                               style="width:60px; border:1px solid #10b981; border-radius:5px; text-align:center; font-weight:bold; padding:5px;">
                     </div>
 
-                    ${l.listaParciales.length > 0 ? '<div style="border-top:1px dashed #ccc; padding-top:8px;">' : ''}
                     ${l.listaParciales.map((p, idxPar) => `
-                        <div style="display:flex; justify-content:space-between; font-size:13px; color:#666; margin-bottom:4px; background:#fff9f0; padding:4px 8px; border-radius:4px;">
+                        <div style="background:#fff7ed; border-top:1px dashed #fdba74; padding:6px 10px; display:flex; justify-content:space-between; font-size:13px;">
                             <span><i class="fas fa-box-open" style="color:#f59e0b"></i> Caja parcial:</span>
-                            <span>
-                                <b>${fNum(p)}</b> Unid. 
-                                <i class="fas fa-times" onclick="eliminarParcial(${idxLote}, ${idxPar})" style="margin-right:8px; color:red; cursor:pointer;"></i>
+                            <span style="font-weight:bold;">
+                                ${fNum(p)} Unid. 
+                                <i class="fas fa-times" onclick="eliminarParcial(${idxLote}, ${idxPar})" style="color:red; margin-left:8px; cursor:pointer;"></i>
                             </span>
                         </div>
                     `).join('')}
-                    ${l.listaParciales.length > 0 ? '</div>' : ''}
 
-                    <div style="margin-top:10px; padding-top:8px; border-top:2px solid #eee; display:flex; justify-content:space-between; align-items:center;">
-                        <b style="color:#666;">Total Unid:</b>
-                        <b style="font-size:18px; color:var(--p);">${fNum(totalUnid)}</b>
+                    <div style="border-top:1px solid #eee; margin-top:5px; padding-top:8px; display:flex; justify-content:space-between; align-items:center;">
+                        <span style="color:#666; font-weight:bold;">Total Unid:</span>
+                        <span style="font-size:20px; color:#10b981; font-weight:800;">${fNum(totalUnid)}</span>
                     </div>
                 </div>
             </div>
