@@ -105,17 +105,80 @@ function mostrarFormulario(code) {
         } else {
             const iconClass = app.memoriaEstandar[code + "_icon"] || "fa-box";
             fields.innerHTML = `
-                <div style="background:#e7f3ff; padding:10px; border-radius:8px; margin-bottom:15px; text-align:center;">
-                    <i class="fas ${iconClass} fa-2x"></i><br>סטנדרט: <b>${fNum(est)}</b>
+                <div style="background:#e7f3ff; padding:15px; border-radius:8px; margin-bottom:15px; text-align:center;">
+                    <i class="fas ${iconClass} fa-2x" style="margin-bottom:8px;"></i><br>
+                    <span style="font-size:14px; color:#666;">סטנדרט:</span> <b style="font-size:20px; color:var(--s);">${fNum(est)}</b>
                 </div>
-                <input type="number" id="f-par-btn" placeholder="יחידות חלקיות" style="width:100%; padding:10px; margin-bottom:15px; font-size:18px; text-align:center;">
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                    <button class="btn-action" style="background:var(--s); color:white; padding:15px;" onclick="finalizarRegistro('${code}', 1, 0)">+1 ארגז</button>
-                    <button class="btn-action" style="background:var(--p); color:white; padding:15px;" onclick="capturarParcialBtn('${code}')">חלקי</button>
+                
+                <div style="background:#f8f9fa; padding:15px; border-radius:8px; margin-bottom:15px;">
+                    <label style="display:block; font-size:12px; color:#666; margin-bottom:5px;">
+                        💡 רמז: השאר ריק לקופסה שלמה / הזן כמות לחלקי
+                    </label>
+                    <input type="number" 
+                           id="f-parcial-input" 
+                           placeholder="כמות יחידות (ריק = קופסה שלמה)" 
+                           style="width:100%; padding:12px; border:2px solid #ddd; border-radius:8px; font-size:16px; text-align:center;"
+                           onkeypress="if(event.key==='Enter') procesarBotonUnico('${code}')">
                 </div>
+
+                <button class="btn-action" 
+                        style="background:var(--p); color:white; padding:18px; font-size:18px; font-weight:bold; border-radius:10px; box-shadow:0 4px 10px rgba(40,167,69,0.3);" 
+                        onclick="procesarBotonUnico('${code}')">
+                    <i class="fas fa-plus-circle"></i> 
+                    <span id="txt-btn-accion">הוסף ארגז שלם</span>
+                </button>
             `;
+            
+            // Focus automático en el input para agilidad
+            setTimeout(() => {
+                const input = document.getElementById('f-parcial-input');
+                if(input) {
+                    input.focus();
+                    // Cambiar texto del botón según contenido
+                    input.addEventListener('input', function() {
+                        const btnText = document.getElementById('txt-btn-accion');
+                        if(this.value && this.value > 0) {
+                            btnText.innerHTML = `הוסף חלקי (${this.value} יח')`;
+                        } else {
+                            btnText.innerHTML = 'הוסף ארגז שלם';
+                        }
+                    });
+                }
+            }, 100);
         }
     }
+}
+
+// 🆕 NUEVA FUNCIÓN: Botón único inteligente
+function procesarBotonUnico(code) {
+    const inputParcial = document.getElementById('f-parcial-input');
+    const valorParcial = inputParcial.value.trim();
+    
+    if (valorParcial === '' || valorParcial === '0') {
+        // CAJA COMPLETA (input vacío o 0)
+        finalizarRegistro(code, 1, 0);
+    } else {
+        // CAJA PARCIAL (con cantidad específica)
+        const cantidad = parseInt(valorParcial);
+        if (isNaN(cantidad) || cantidad < 0) {
+            alert("כמות לא חוקית");
+            return;
+        }
+        if (cantidad === 0) {
+            finalizarRegistro(code, 1, 0);
+        } else {
+            finalizarRegistro(code, 0, cantidad);
+        }
+        // Limpiar input después de registrar parcial
+        inputParcial.value = '';
+    }
+}
+
+// Mantener esta función para compatibilidad si se necesita en otro lugar
+function capturarParcialBtn(code) {
+    const pVal = parseInt(document.getElementById('f-par-btn').value) || 0;
+    if(pVal <= 0) return alert("הזן כמות חלקית");
+    finalizarRegistro(code, 0, pVal);
 }
 
 function definirEst(code) {
@@ -246,10 +309,12 @@ function descargarCSV() {
     if (app.lotes.length === 0) return alert("No hay datos");
     const idPedido = document.getElementById('txt-pedido').innerText || "SIN_ID";
     let csv = "\uFEFFReporte Inventario\nPedido: " + idPedido + "\n\n";
-    csv += "Lote,Tipo,Estandar,Cajas Completas,Unid. Parciales,Subtotal Unidades\n";
+    csv += "Lote,Tipo,Estandar,Cajas Completas,Parciales (lista),Total Parciales,Total Unidades\n";
     
     app.lotes.forEach(l => {
-        csv += `${l.id},${l.tipo},${l.est},${l.com},${l.par},${(l.com*l.est)+l.par}\n`;
+        const sumaParciales = l.listaParciales.reduce((a, b) => a + b, 0);
+        const totalUnidades = (l.com * l.est) + sumaParciales;
+        csv += `${l.id},${l.tipo},${l.est},${l.com},"${l.listaParciales.join('|')}",${sumaParciales},${totalUnidades}\n`;
     });
 
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
