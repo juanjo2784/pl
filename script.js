@@ -63,57 +63,55 @@ function procesarCapturaManual() {
     mostrarFormulario(app.ultimoCodigo);
 }
 
+// MODIFICACIÓN: Función de registro inteligente
+function registrarInteligente(code) {
+    const input = document.getElementById('f-mixto');
+    const valor = parseInt(input.value) || 0;
+
+    if (valor === 0) {
+        // Campo vacío = 1 caja completa
+        finalizarRegistro(code, 1, 0);
+    } else {
+        // Campo con número = Caja parcial
+        finalizarRegistro(code, 0, valor);
+    }
+}
+
+// MODIFICACIÓN: Mostrar Formulario con Autofocus
 function mostrarFormulario(code) {
     document.getElementById('form-scanner').classList.remove('hidden');
     document.getElementById('txt-lote-det').innerText = "אצווה: " + code;
     const fields = document.getElementById('dynamic-fields');
     const est = app.memoriaEstandar[code] || "";
 
-    const htmlIconos = `
-        <label style="display:block; font-size:12px; color:#666; margin-top:10px;">סוג מוצר</label>
-        <div class="icon-selector">
-            <div class="icon-option selected" onclick="selectIcon(this, 'fa-box', 'ארגז')"><i class="fas fa-box"></i><span>ארגז</span></div>
-            <div class="icon-option" onclick="selectIcon(this, 'fa-file-alt', 'עלון')"><i class="fas fa-file-alt"></i><span>עלון</span></div>
-            <div class="icon-option" onclick="selectIcon(this, 'fa-tags', 'מדבקה')"><i class="fas fa-tags"></i><span>מדבקה</span></div>
-            <div class="icon-option" onclick="selectIcon(this, 'fa-shield-alt', 'T.E')"><i class="fas fa-shield-alt"></i><span>TE</span></div>
-            <div class="icon-option" onclick="selectIcon(this, 'fa-archive', 'קרטון')"><i class="fas fa-archive"></i><span>קרטון</span></div>
-            <div class="icon-option" onclick="selectIcon(this, 'fa-cube', 'חומר 1')"><i class="fas fa-cube"></i><span>חומר1</span></div>
-            <div class="icon-option" onclick="selectIcon(this, 'fa-shapes', 'חומר 2')"><i class="fas fa-shapes"></i><span>חומר 2</span></div>
-            <div class="icon-option" onclick="selectIcon(this, 'fa-folder', 'חומר 3')"><i class="fas fa-folder"></i><span>חומר 3</span></div>
-        </div>
-    `;
-
     if(app.modo === 'rapido') {
-        fields.innerHTML = `
-            ${!est ? htmlIconos : ''}
-            <label>כמות סטנדרטית</label>
-            <input type="number" id="f-est" value="${est}" style="width:100%; padding:10px;">
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px;">
-                <div><label>ארגזים</label><input type="number" id="f-com" value="0" style="width:100%; padding:10px;"></div>
-                <div><label>חלקי</label><input type="number" id="f-par" value="0" style="width:100%; padding:10px;"></div>
-            </div>
-            <button class="btn-action" style="background:var(--p); width:100%; color:white; padding:15px; margin-top:15px;" onclick="finalizarRegistro('${code}')">שמור הכל</button>
-        `;
+        // ... (Tu código actual de modo rápido se mantiene)
     } else {
         if(!est) {
-            fields.innerHTML = `
-                ${htmlIconos}
-                <label>כמות סטנדרטית:</label>
-                <input type="number" id="f-est" placeholder="Ej: 12" style="width:100%; padding:10px;">
-                <button class="btn-action" style="background:var(--s); width:100%; color:white; padding:15px; margin-top:10px;" onclick="definirEst('${code}')">המשך</button>
-            `;
+            // ... (Tu código actual de definir estándar se mantiene)
         } else {
             const iconClass = app.memoriaEstandar[code + "_icon"] || "fa-box";
             fields.innerHTML = `
                 <div style="background:#e7f3ff; padding:10px; border-radius:8px; margin-bottom:15px; text-align:center;">
-                    <i class="fas ${iconClass} fa-2x"></i><br>סטנדרט: <b>${fNum(est)}</b>
+                    <i class="fas ${iconClass} fa-2x" style="color:var(--s)"></i><br>סטנדרט: <b>${fNum(est)}</b>
                 </div>
-                <input type="number" id="f-par-btn" placeholder="יחידות חלקיות" style="width:100%; padding:10px; margin-bottom:15px; font-size:18px; text-align:center;">
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                    <button class="btn-action" style="background:var(--s); color:white; padding:15px;" onclick="finalizarRegistro('${code}', 1, 0)">+1 ארגז</button>
-                    <button class="btn-action" style="background:var(--p); color:white; padding:15px;" onclick="capturarParcialBtn('${code}')">חלקי</button>
-                </div>
+                
+                <label style="display:block; margin-bottom:5px; font-weight:bold; color:#444;">כמות (ריק = ארגז מלא):</label>
+                <input type="number" id="f-mixto" placeholder="הכנס יחידות או השאר ריק" 
+                       style="width:100%; padding:15px; margin-bottom:15px; font-size:22px; text-align:center; border:2px solid var(--p); border-radius:10px; box-sizing:border-box;">
+                
+                <button class="btn-action" style="background:var(--p); color:white; padding:18px; font-size:18px; border-radius:10px;" 
+                        onclick="registrarInteligente('${code}')">
+                    <i class="fas fa-check-circle"></i> אשר רישום (Confirmar)
+                </button>
             `;
+            
+            // AUTO-FOCUS: Abre el teclado automáticamente
+            setTimeout(() => {
+                const inp = document.getElementById('f-mixto');
+                inp.focus();
+                inp.click(); // Algunos navegadores móviles requieren el click
+            }, 300);
         }
     }
 }

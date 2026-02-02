@@ -188,43 +188,41 @@ body {
     overflow: hidden; 
 }
 
-/* Configuramos la pantalla principal como un contenedor flex */
-#screen-main {
-    display: flex;
-    flex-direction: column;
-    height: 100vh; /* Ocupa el total de la pantalla */
-    width: 100%;
-}
-
-/* El encabezado mantiene su tamaño fijo */
+/* El encabezado mantiene su tamaño fijo 
 .header-pedido {
     flex-shrink: 0;
     padding: 15px;
     background: var(--dark);
     color: white;
     text-align: center;
+}*/
+
+/* Ajuste del contenedor principal */
+#screen-main {
+    display: flex !important;
+    flex-direction: column;
+    height: 100vh; /* Ocupa el alto total de la ventana */
+    overflow: hidden;
 }
 
-/* LA CLAVE: El contenedor de la lista crece para llenar el vacío */
+/* LA CLAVE: El contenedor de la lista se estira */
 .list-container {
-    flex-grow: 1; 
-    overflow-y: auto; /* Solo esta parte tendrá scroll */
+    flex: 1; /* Absorbe el espacio en blanco */
+    overflow-y: auto;
     padding: 10px;
+    padding-bottom: 20px;
     background-color: #f8fafc;
-    -webkit-overflow-scrolling: touch; /* Suavidad en iOS */
+    -webkit-overflow-scrolling: touch;
 }
 
-/* El footer se mantiene siempre abajo sin moverse */
+/* Footer pegado abajo */
 .nav-footer {
-    flex-shrink: 0;
-    height: 70px;
+    flex-shrink: 0; /* No permite que el footer se achique */
+    position: relative; /* Cambiado de fixed a relative para fluir con flex */
+    height: 75px;
+    background: var(--dark);
     display: flex;
     justify-content: space-around;
     align-items: center;
-    background: white;
-    border-top: 1px solid #ddd;
-}
-
-#screen-main:not(.hidden) {
-    display: flex !important;
+    border-top: 1px solid #444;
 }
