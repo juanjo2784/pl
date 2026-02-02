@@ -188,14 +188,14 @@ body {
     overflow: hidden; 
 }
 
-/* El encabezado mantiene su tamaño fijo 
+/* El encabezado mantiene su tamaño fijo */
 .header-pedido {
     flex-shrink: 0;
     padding: 15px;
     background: var(--dark);
     color: white;
     text-align: center;
-}*/
+}
 
 /* Ajuste del contenedor principal */
 #screen-main {
