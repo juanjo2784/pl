@@ -212,8 +212,7 @@ function capturarParcialBtn(code) {
     finalizarRegistro(code, 0, pVal);
 }
 
-// --- LOGICA DE REGISTRO (CORREGIDA) ---
-// --- REGISTRO ---
+// --- REGISTRO CON TIPO ---
 function finalizarRegistro(code, cNominal, pNominal) {
     let est = app.memoriaEstandar[code];
     let com = cNominal || 0;
@@ -226,12 +225,18 @@ function finalizarRegistro(code, cNominal, pNominal) {
         app.memoriaEstandar[code] = est;
     }
 
+    // Obtener el tipo de producto (del icono seleccionado o de la memoria)
+    const tipoProducto = app.memoriaEstandar[code + "_tipo"] || tipoProductoSeleccionado;
+    const iconoProducto = app.memoriaEstandar[code + "_icon"] || iconoSeleccionado;
+
     // Buscamos si el lote ya existe
     let lote = app.lotes.find(l => l.id === code);
 
     if (lote) {
-        lote.com += com; // Agrupamos cajas completas
-        if (par > 0) lote.listaParciales.push(par); // Listamos parcial individual
+        lote.com += com;
+        if (par > 0) lote.listaParciales.push(par);
+        lote.tipo = tipoProducto; // Actualizar tipo por si cambió
+        lote.icon = iconoProducto;
         lote.updated = true;
     } else {
         app.lotes.unshift({
@@ -239,8 +244,8 @@ function finalizarRegistro(code, cNominal, pNominal) {
             est: est,
             com: com,
             listaParciales: par > 0 ? [par] : [],
-            tipo: app.memoriaEstandar[code + "_tipo"] || tipoProductoSeleccionado,
-            icon: app.memoriaEstandar[code + "_icon"] || iconoSeleccionado,
+            tipo: tipoProducto,
+            icon: iconoProducto,
             updated: true
         });
     }
@@ -249,27 +254,69 @@ function finalizarRegistro(code, cNominal, pNominal) {
     cerrarFormulario();
 }
 
-// --- LISTA AGRUPADA POR LOTE ---
+// --- LISTA CON TOTALES POR TIPO ---
 function actualizarLista() {
     const div = document.getElementById('container-lotes');
-    if (app.lotes.length === 0) { div.innerHTML = ""; return; }
+    if (app.lotes.length === 0) { 
+        div.innerHTML = ""; 
+        return; 
+    }
 
-    let htmlFinal = "";
+    // 🆕 CALCULAR TOTALES POR TIPO
+    const totalesPorTipo = {};
+    
+    app.lotes.forEach(l => {
+        const sumaParciales = l.listaParciales.reduce((a, b) => a + b, 0);
+        const totalUnidades = (l.com * l.est) + sumaParciales;
+        
+        if (!totalesPorTipo[l.tipo]) {
+            totalesPorTipo[l.tipo] = {
+                cantidad: 0,
+                unidades: 0,
+                icon: l.icon
+            };
+        }
+        totalesPorTipo[l.tipo].cantidad += l.com + (l.listaParciales.length > 0 ? 1 : 0); // Cajas completas + items con parciales
+        totalesPorTipo[l.tipo].unidades += totalUnidades;
+    });
 
+    // Generar HTML de resumen por tipo
+    let resumenTiposHTML = '';
+    const ordenTipos = ['ארגז', 'עלון', 'מדבקה', 'T.E', 'קרטון', 'חומר 1', 'חומר 2', 'חומר 3'];
+    
+    ordenTipos.forEach(tipo => {
+        if (totalesPorTipo[tipo]) {
+            const t = totalesPorTipo[tipo];
+            resumenTiposHTML += `
+                <div style="display:flex; align-items:center; gap:8px; padding:8px 12px; background:#f8f9fa; border-radius:6px; border-left:3px solid var(--s);">
+                    <i class="fas ${t.icon}" style="color:var(--s);"></i>
+                    <span style="flex:1; font-size:13px;">${tipo}:</span>
+                    <span style="font-weight:bold; color:var(--dark);">${t.unidades.toLocaleString()} יח'</span>
+                </div>
+            `;
+        }
+    });
+
+    // Generar lista de lotes
+    let lotesHTML = "";
     app.lotes.forEach((l, idxLote) => {
         const sumaParciales = l.listaParciales.reduce((a, b) => a + b, 0);
         const totalUnid = (l.com * l.est) + sumaParciales;
 
-        htmlFinal += `
+        lotesHTML += `
             <div class="lote-card" style="background:white; margin-bottom:10px; border-radius:8px; border:1px solid #ddd; overflow:hidden;">
-                <div style="background:#2d2d2d; color:white; padding:10px; display:flex; justify-content:space-between;">
-                    <span><i class="fas fa-file-alt"></i> <b>${l.id}</b> <small>(Est: ${fNum(l.est)})</small></span>
+                <div style="background:#2d2d2d; color:white; padding:10px; display:flex; justify-content:space-between; align-items:center;">
+                    <span>
+                        <i class="fas ${l.icon}" style="margin-right:5px; color:#aaa;"></i>
+                        <b>${l.id}</b> 
+                        <small style="opacity:0.8;">(${l.tipo} | Est: ${fNum(l.est)})</small>
+                    </span>
                     <i class="fas fa-trash" onclick="eliminarLote(${idxLote})" style="color:#f87171; cursor:pointer;"></i>
                 </div>
 
                 <div style="padding:10px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                        <span style="font-size:14px;"><i class="fas fa-box" style="color:#d97706"></i> ארגזים מלאים (Cajas comp.):</span>
+                        <span style="font-size:14px;"><i class="fas fa-box" style="color:#d97706"></i> ארגזים מלאים:</span>
                         <input type="number" value="${l.com}" 
                                onchange="editCajas(${idxLote}, this.value)"
                                style="width:60px; border:1px solid #10b981; border-radius:5px; text-align:center; font-weight:bold; padding:5px;">
@@ -286,7 +333,7 @@ function actualizarLista() {
                     `).join('')}
 
                     <div style="border-top:1px solid #eee; margin-top:5px; padding-top:8px; display:flex; justify-content:space-between; align-items:center;">
-                        <span style="color:#666; font-weight:bold;">Total Unid:</span>
+                        <span style="color:#666; font-weight:bold;">סה"כ יחידות:</span>
                         <span style="font-size:20px; color:#10b981; font-weight:800;">${fNum(totalUnid)}</span>
                     </div>
                 </div>
@@ -294,9 +341,27 @@ function actualizarLista() {
         `;
     });
 
-    div.innerHTML = htmlFinal;
+    // 🆕 COMBINAR RESUMEN + LOTES
+    div.innerHTML = `
+        <div style="margin-bottom:15px; background:white; padding:15px; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+            <h4 style="margin:0 0 12px 0; color:var(--dark); font-size:14px; border-bottom:2px solid var(--s); padding-bottom:8px;">
+                📊 סיכום לפי סוג (Resumen por tipo)
+            </h4>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                ${resumenTiposHTML}
+            </div>
+            <div style="margin-top:12px; padding-top:12px; border-top:2px solid #e9ecef; display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-weight:bold; color:var(--dark);">סה"כ כללי:</span>
+                <span style="font-size:18px; font-weight:800; color:var(--s);">
+                    ${Object.values(totalesPorTipo).reduce((a, b) => a + b.unidades, 0).toLocaleString()} יח'
+                </span>
+            </div>
+        </div>
+        ${lotesHTML}
+    `;
 }
-// --- FUNCIONES AUXILIARES ---
+
+//--- FUNCIONES AUXILIARES ---
 function editCajas(idx, val) {
     app.lotes[idx].com = parseInt(val) || 0;
     actualizarLista();
