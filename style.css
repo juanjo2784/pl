@@ -143,7 +143,7 @@
 }
 
 #container-lotes {
-    /* max-height: 400px; /* Altura máxima antes de mostrar la barra */
+    max-height: 400px; /* Altura máxima antes de mostrar la barra */
     overflow-y: auto;  /* Habilita el scroll vertical */
     padding: 10px;
     background: #fdfdfd;
@@ -194,57 +194,38 @@ body {
     flex-direction: column;
     height: 100vh;
     width: 100%;
-    overflow: hidden; /* Prevenir scroll del body */
-}
-.header-pedido { 
-    background: var(--dark); 
-    color: white; 
-    padding: 15px; 
-    text-align: center; 
-    font-weight: bold; 
-    font-size: 14px;
-    flex-shrink: 0; /* No se encoge */
-}
-.list-container { 
-    flex: 1; /* Toma todo el espacio disponible */
-    overflow-y: auto; /* SCROLL VERTICAL SIEMPRE HABILITADO */
-    padding: 10px;
-    padding-bottom: 90px; /* Espacio para el footer fijo */
-    background-color: #f8fafc;
-    -webkit-overflow-scrolling: touch; /* Suavidad en iOS */
-    
-    /* Scrollbar personalizado */
-    scrollbar-width: thin;
-    scrollbar-color: var(--s) #f0f0f0;
 }
 
-/* Scrollbar para Chrome/Safari */
-.list-container::-webkit-scrollbar {
-    width: 6px;
-}
-
-.list-container::-webkit-scrollbar-thumb {
-    background-color: var(--s);
-    border-radius: 10px;
-}
-
-.list-container::-webkit-scrollbar-track {
-    background: #f0f0f0;
-}
-
-/* FOOTER FIJO */
-.nav-footer { 
-    position: fixed; 
-    bottom: 0; 
-    left: 0; 
-    right: 0; 
-    background: var(--dark); 
-    padding: 12px; 
-    display: flex; 
-    justify-content: space-around; 
-    z-index: 100;
-    height: 70px;
+/* El encabezado mantiene su tamaño fijo */
+.header-pedido {
     flex-shrink: 0;
+    padding: 15px;
+    background: var(--dark);
+    color: white;
+    text-align: center;
+}
+
+/* LA CLAVE: El contenedor de la lista crece para llenar el vacío */
+.list-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+    background-color: #f8fafc;
+    -webkit-overflow-scrolling: touch;
+    /* ELIMINAR: max-height, position: fixed, etc. */
+}
+/* El footer se mantiene siempre abajo sin moverse */
+.nav-footer {
+    flex-shrink: 0;
+    height: 70px;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    background: white;
+    border-top: 1px solid #ddd;
+    /* Asegurar que no haya margen extra */
+    margin: 0;
+    padding: 12px;
 }
 
 #screen-main:not(.hidden) {
