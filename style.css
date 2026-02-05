@@ -1,357 +1,90 @@
-:root { 
-    --p: #28a745; 
-    --s: #007bff; 
-    --d: #dc3545; 
-    --dark: #212529; 
-    --light: #f8f9fa; 
-}
+        :root { --p: #28a745; --s: #007bff; --d: #dc3545; --dark: #212529; --light: #f8f9fa; }
+        body { font-family: -apple-system, sans-serif; margin: 0; background: var(--light); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        .hidden { display: none !important; }
+        
+        /* HEADER */
+        .header-pedido { background: var(--dark); color: white; padding: 12px; text-align: center; font-weight: bold; font-size: 14px; }
 
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-}
+        /* LISTA CENTRAL */
+        .list-container { flex: 1; overflow-y: auto; padding: 10px; padding-bottom: 90px; }
+        .lote-item { background: white; padding: 12px; border-radius: 10px; margin-bottom: 8px; border-left: 5px solid var(--s); box-shadow: 0 2px 4px rgba(0,0,0,0.1); position: relative; }
+        .btn-delete { position: absolute; top: 8px; right: 8px; color: #ccc; border: none; background: none; font-size: 1.1em; }
 
-html, body { 
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
-    background: var(--light); 
-    height: 100%; 
-    overflow: hidden;
-}
+                /* MIRA DE PRECISIÓN */
+        .scanner-viewfinder {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 50%; height: 15px; /* Un poco más alto para ángulos */
+            border: 2px dashed rgba(255, 255, 255, 0.5); /* Guía sutil */
+            z-index: 5;
+            box-shadow: 0 0 0 4000px rgba(0,0,0,0.5);
+        }
 
-.hidden { 
-    display: none !important; 
-}
+        /* Esquinas resaltadas para indicar zona de enfoque */
+        .scanner-viewfinder::before {
+            content: "";
+            position: absolute;
+            top: -5px; left: -5px; width: 25px; height: 10px;
+            border-top: 3px solid #28a745; border-left: 3px solid #28a745;
+        }
+        .scanner-viewfinder::after {
+            content: "";
+            position: absolute;
+            bottom: -5px; right: -5px; width: 25px; height: 10px;
+            border-bottom: 5px solid #28a745; border-right: 5px solid #28a745;
+        }
 
-/* ========== PANTALLA INTRO ========== */
-#screen-intro {
-    height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-}
+        .laser-line {
+            position: absolute;
+            top: 50%; left: 5%; width: 90%;
+            height: 2px; background: rgba(255, 0, 0, 0.6);
+            box-shadow: 0 0 5px red;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse { 0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; } }
 
-#screen-intro > div {
-    width: 100%;
-    max-width: 400px;
-}
+        /* OVERLAY ESCANER */
+        #overlay-scanner { position: fixed; inset: 0; background: #000; z-index: 2000; }
+        #interactive { width: 100%; height: 100%; position: relative; }
+        #interactive video { width: 100%; height: 100%; object-fit: cover; }
 
-#inp-pedido {
-    width: 100%;
-    padding: 12px;
-    margin: 15px 0;
-    border: 2px solid #ddd;
-    border-radius: 8px;
-    font-size: 16px;
-    text-align: center;
-}
+        /* BOTÓN CAPTURAR (Diseño tipo cámara profesional) */
+        .btn-capture-trigger {
+            position: absolute;
+            bottom: 50px; left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            padding: 18px;
+            background: var(--p);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            z-index: 10;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            text-transform: uppercase;
+        }
 
-/* ========== PANTALLA PRINCIPAL ========== */
-#screen-main {
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-    width: 100%;
-}
+        /* CONTROLES LISTA */
+        .controls-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+        .input-edit { padding: 6px; border-radius: 4px; border: 1px solid #ddd; width: 60px; font-size: 15px; text-align: center; }
+        .calc-res { background: #f8f9fa; padding: 8px; border-radius: 6px; margin-top: 8px; display: flex; justify-content: space-between; font-size: 13px; border: 1px dashed #ccc; }
 
-.header-pedido { 
-    background: var(--dark); 
-    color: white; 
-    padding: 15px; 
-    text-align: center; 
-    font-weight: bold; 
-    font-size: 16px;
-    flex-shrink: 0;
-}
+        /* FOOTER FIJO */
+        .nav-footer { position: fixed; bottom: 0; left: 0; right: 0; background: var(--dark); padding: 12px; display: flex; justify-content: space-around; z-index: 100; }
+        .icon-btn { width: 55px; height: 55px; border-radius: 50%; border: none; color: white; font-size: 22px; display: flex; align-items: center; justify-content: center; }
 
-/* Contenedor principal que ocupa todo el espacio disponible */
-.main-content {
-    flex: 1;
-    overflow: hidden;
-    position: relative;
-}
+        /* FORM POPUP */
+        .form-pop { background: white; padding: 20px; border-radius: 15px 15px 0 0; position: absolute; bottom: 0; width: 100%; z-index: 2100; box-sizing: border-box; }
+        .btn-action { width: 100%; padding: 14px; border: none; border-radius: 8px; color: white; font-weight: bold; margin-top: 8px; font-size: 16px; }
 
-/* Lista con scroll - CORREGIDO */
-.list-container { 
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    padding: 10px;
-    padding-bottom: 90px;
-    background-color: #f8fafc;
-}
-
-/* Scrollbar */
-.list-container::-webkit-scrollbar {
-    width: 6px;
-}
-
-.list-container::-webkit-scrollbar-thumb {
-    background-color: var(--s);
-    border-radius: 10px;
-}
-
-.list-container::-webkit-scrollbar-track {
-    background: #f0f0f0;
-}
-
-/* ========== CARDS DE LOTES ========== */
-.lote-card {
-    background: white;
-    margin-bottom: 10px;
-    border-radius: 8px;
-    border: 1px solid #ddd;
-    overflow: hidden;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.lote-card > div:first-child {
-    background: #2d2d2d;
-    color: white;
-    padding: 10px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.lote-card > div:last-child {
-    padding: 10px;
-}
-
-/* ========== FOOTER FIJO ========== */
-.nav-footer { 
-    background: var(--dark); 
-    padding: 12px; 
-    display: flex; 
-    justify-content: space-around; 
-    align-items: center;
-    height: 70px;
-    flex-shrink: 0;
-}
-
-.icon-btn { 
-    width: 55px; 
-    height: 55px; 
-    border-radius: 50%; 
-    border: none; 
-    color: white; 
-    font-size: 22px; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center;
-    cursor: pointer;
-}
-
-/* ========== OVERLAY ESCANER ========== */
-#overlay-scanner { 
-    position: fixed; 
-    inset: 0; 
-    background: #000; 
-    z-index: 2000;
-    display: flex;
-    flex-direction: column;
-}
-
-/* ÁREA DE CÁMARA - ANGOSTA (35% de la pantalla) */
-.scanner-camera-area {
-    height: 35vh;
-    position: relative;
-    background: #000;
-    flex-shrink: 0;
-}
-
-#interactive { 
-    width: 100%; 
-    height: 100%; 
-    position: relative; 
-    overflow: hidden;
-}
-
-#interactive video { 
-    width: 100%; 
-    height: 100%; 
-    object-fit: cover; 
-}
-
-/* MIRA DEL ESCANER - ÁREA DE LECTURA ANGOSTA */
-.scanner-viewfinder {
-    position: absolute;
-    top: 50%; 
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 70%; 
-    height: 60px; /* Altura fija angosta para códigos de barras */
-    border: 2px dashed rgba(255, 255, 255, 0.5);
-    z-index: 5;
-    box-shadow: 0 0 0 2000px rgba(0,0,0,0.6);
-}
-
-/* Esquinas de la mira */
-.scanner-viewfinder::before {
-    content: "";
-    position: absolute;
-    top: -5px; 
-    left: -5px; 
-    width: 20px; 
-    height: 20px;
-    border-top: 3px solid #28a745; 
-    border-left: 3px solid #28a745;
-}
-
-.scanner-viewfinder::after {
-    content: "";
-    position: absolute;
-    bottom: -5px; 
-    right: -5px; 
-    width: 20px; 
-    height: 20px;
-    border-bottom: 3px solid #28a745; 
-    border-right: 3px solid #28a745;
-}
-
-/* Línea láser */
-.laser-line {
-    position: absolute;
-    top: 50%; 
-    left: 5%; 
-    width: 90%;
-    height: 2px; 
-    background: rgba(255, 0, 0, 0.8);
-    box-shadow: 0 0 8px red;
-    animation: pulse 1.5s infinite;
-}
-
-@keyframes pulse { 
-    0%, 100% { opacity: 0.3; } 
-    50% { opacity: 1; } 
-}
-
-/* Botón capturar */
-.btn-capture-trigger {
-    position: absolute;
-    bottom: 20px; 
-    left: 50%;
-    transform: translateX(-50%);
-    width: 90%;
-    max-width: 300px;
-    padding: 15px;
-    background: var(--p);
-    color: white;
-    border: none;
-    border-radius: 10px;
-    font-size: 16px;
-    font-weight: bold;
-    z-index: 10;
-    cursor: pointer;
-}
-
-/* Botón volver */
-.btn-back {
-    position: absolute; 
-    top: 15px; 
-    left: 15px; 
-    color: white; 
-    background: rgba(0,0,0,0.6); 
-    border: none; 
-    border-radius: 50%; 
-    width: 45px; 
-    height: 45px; 
-    z-index: 20;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
-}
-
-/* Control de zoom */
-.zoom-control {
-    position: absolute; 
-    bottom: 80px; 
-    left: 50%; 
-    transform: translateX(-50%); 
-    width: 80%; 
-    max-width: 250px;
-    z-index: 25; 
-    display: flex; 
-    align-items: center; 
-    gap: 10px; 
-    background: rgba(0,0,0,0.6); 
-    padding: 8px 15px; 
-    border-radius: 25px;
-}
-
-.zoom-control i {
-    color: white;
-    font-size: 14px;
-}
-
-#zoom-range {
-    flex: 1;
-    height: 6px;
-    border-radius: 3px;
-    background: rgba(255,255,255,0.3);
-    outline: none;
-    -webkit-appearance: none;
-}
-
-#zoom-range::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    background: white;
-    cursor: pointer;
-}
-
-/* ========== FORMULARIO POPUP ========== */
-.form-pop { 
-    background: white; 
-    padding: 20px; 
-    border-radius: 20px 20px 0 0; 
-    position: absolute; 
-    bottom: 0; 
-    left: 0;
-    right: 0;
-    max-height: 65vh;
-    overflow-y: auto;
-    z-index: 2100; 
-    box-shadow: 0 -4px 20px rgba(0,0,0,0.3);
-}
-
-.form-pop h3 {
-    margin: 0 0 15px 0; 
-    color: var(--s);
-    font-size: 18px;
-    text-align: center;
-}
-
-.btn-action {
-    width: 100%;
-    padding: 14px;
-    border: none;
-    border-radius: 8px;
-    color: white;
-    font-weight: bold;
-    font-size: 16px;
-    cursor: pointer;
-    margin-top: 10px;
-}
-
-.btn-cancel {
-    background: var(--d);
-}
-
-/* ========== SELECTOR DE ICONOS ========== */
+        /* Estilos para el selector de iconos */
 .icon-selector {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 8px;
+    gap: 10px;
     margin: 15px 0;
     background: #f8f9fa;
     padding: 10px;
@@ -359,23 +92,13 @@ html, body {
 }
 
 .icon-option {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-size: 10px;
-    padding: 8px 5px;
+    font-size: 24px;
+    padding: 10px;
     text-align: center;
     border: 2px solid transparent;
     border-radius: 8px;
     cursor: pointer;
     background: white;
-    gap: 4px;
-    min-height: 65px;
-}
-
-.icon-option i {
-    font-size: 20px;
 }
 
 .icon-option.selected {
@@ -384,67 +107,127 @@ html, body {
     color: var(--s);
 }
 
-/* ========== INPUTS ========== */
-input[type="number"],
-input[type="text"] {
-    width: 100%;
-    padding: 12px;
-    border: 2px solid #ddd;
-    border-radius: 8px;
-    font-size: 16px;
-    text-align: center;
+/* Icono en la lista principal */
+.lote-type-icon {
+    margin-right: 8px;
+    color: #555;
 }
 
-input[type="number"]:focus,
-input[type="text"]:focus {
-    border-color: var(--s);
-    outline: none;
+.icon-option {
+    display: flex;
+    flex-direction: column; /* Icono arriba, texto abajo */
+    align-items: center;
+    font-size: 10px; /* Tamaño del texto del Value */
+    gap: 5px;
+}
+.icon-option i {
+    font-size: 20px; /* Tamaño del icono */
 }
 
-/* Inputs pequeños para cantidades */
-.input-cantidad {
+/*subtotales por lote */
+.input-edit {
     width: 60px;
     padding: 8px;
-    border: 2px solid var(--p);
-    border-radius: 5px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
     text-align: center;
-    font-weight: bold;
 }
 
-/* ========== BOTONES DE ACCIÓN ========== */
-.btn-primary {
-    background: var(--p);
+.lote-item {
+    transition: background 0.3s ease;
 }
 
-.btn-secondary {
-    background: var(--s);
+.lote-item.updated {
+    background-color: #d4edda !important; /* Flash verde al actualizar */
+
 }
 
-.btn-danger {
-    background: var(--d);
+#container-lotes {
+    max-height: 400px; /* Altura máxima antes de mostrar la barra */
+    overflow-y: auto;  /* Habilita el scroll vertical */
+    padding: 10px;
+    background: #fdfdfd;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    margin-top: 10px;
+    min-height: auto;
+    /* Personalización de la barra de desplazamiento (Scrollbar) */
+    scrollbar-width: thin;
+    flex: 1;               /* Esto hace que la lista tome todo el espacio sobrante */
+    overflow-y: auto;      /* Permite scroll si la lista es muy larga */
+    scrollbar-color: var(--s) #f0f0f0;
 }
 
-/* Grid de botones */
-.btn-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    margin-top: 15px;
+.main-content {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
 }
 
-/* ========== RESPONSIVE ========== */
-@media (max-height: 700px) {
-    .scanner-camera-area {
-        height: 30vh;
-    }
-    
-    .form-pop {
-        max-height: 70vh;
-    }
+/* Estilo para navegadores Chrome/Safari (celulares Android/iOS) */
+#container-lotes::-webkit-scrollbar {
+    width: 6px;
 }
 
-@media (max-height: 600px) {
-    .scanner-camera-area {
-        height: 25vh;
-    }
+#container-lotes::-webkit-scrollbar-thumb {
+    background-color: var(--s); /* Color de tu marca */
+    border-radius: 10px;
+}
+
+#container-lotes::-webkit-scrollbar-track {
+    background: #f0f0f0;
+}
+
+/* Aseguramos que el cuerpo no tenga scroll exterior */
+body {
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; 
+}
+
+/* Configuramos la pantalla principal como un contenedor flex */
+#screen-main {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    width: 100%;
+}
+
+/* El encabezado mantiene su tamaño fijo */
+.header-pedido {
+    flex-shrink: 0;
+    padding: 15px;
+    background: var(--dark);
+    color: white;
+    text-align: center;
+}
+
+/* LA CLAVE: El contenedor de la lista crece para llenar el vacío */
+.list-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+    background-color: #f8fafc;
+    -webkit-overflow-scrolling: touch;
+    /* ELIMINAR: max-height, position: fixed, etc. */
+}
+/* El footer se mantiene siempre abajo sin moverse */
+.nav-footer {
+    flex-shrink: 0;
+    height: 70px;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    background: white;
+    border-top: 1px solid #ddd;
+    /* Asegurar que no haya margen extra */
+    margin: 0;
+    padding: 12px;
+}
+
+#screen-main:not(.hidden) {
+    display: flex !important;
 }
