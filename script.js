@@ -1,13 +1,11 @@
 let app = { 
     modo: "", 
     lotes: [], 
-    memoriaEstandar: {},    // Ahora por tipo: { "ארגז": 1000, "עלון": 50, ... }
-    estandaresPorTipo: {},  // Nueva estructura para estándares por tipo
-    tipoSeleccionado: null, // Tipo actualmente seleccionado
+    estandaresPorTipo: {},  // { "ארגז": 1000, "עלון": 50, ... }
+    tipoSeleccionado: null,
     ultimoCodigo: "" 
 };
 
-// Configuración de tipos disponibles
 const TIPOS_PRODUCTO = [
     { id: 'fa-box', nombre: 'ארגז', value: 'ארגז' },
     { id: 'fa-file-alt', nombre: 'עלון', value: 'עלון' },
@@ -22,7 +20,6 @@ const TIPOS_PRODUCTO = [
 let iconoSeleccionado = "fa-box"; 
 let tipoProductoSeleccionado = "ארגז";
 
-// Auxiliar para formato
 const fNum = (n) => new Intl.NumberFormat('es-ES').format(n || 0);
 
 // --- INICIO ---
@@ -35,102 +32,8 @@ function iniciarApp(m) {
     document.getElementById('screen-main').classList.remove('hidden');
 }
 
-// --- CONFIGURACIÓN DE TIPO Y ESTÁNDAR ---
-function selectIcon(el, iconName, tipoNombre) {
-    // Quitar selección anterior
-    document.querySelectorAll('.icon-option').forEach(opt => opt.classList.remove('selected'));
-    el.classList.add('selected');
-    
-    iconoSeleccionado = iconName;
-    tipoProductoSeleccionado = tipoNombre;
-    app.tipoSeleccionado = tipoNombre;
-    
-    // Verificar si este tipo ya tiene estándar configurado
-    const estandarExistente = app.estandaresPorTipo[tipoNombre];
-    
-    // Mostrar configuración de estándar (siempre, para permitir corrección)
-    mostrarConfiguracionEstandar(tipoNombre, estandarExistente);
-}
-
-function mostrarConfiguracionEstandar(tipoNombre, valorActual) {
-    const fields = document.getElementById('dynamic-fields');
-    const code = app.ultimoCodigo || "";
-    
-    const estaEditando = valorActual ? '(עריכה)' : '(חדש)';
-    const tituloColor = valorActual ? '#fd7e14' : 'var(--s)';
-    
-    fields.innerHTML = `
-        <div style="background:${valorActual ? '#fff3cd' : '#e7f3ff'}; padding:15px; border-radius:8px; margin-bottom:15px; text-align:center; border:2px solid ${tituloColor};">
-            <i class="fas ${iconoSeleccionado} fa-2x" style="margin-bottom:8px; color:${tituloColor};"></i><br>
-            <span style="font-size:16px; font-weight:bold; color:${tituloColor};">
-                ${tipoNombre} ${estaEditando}
-            </span><br>
-            ${valorActual ? `<small style="color:#666;">ערך נוכחי: <b>${fNum(valorActual)}</b></small>` : ''}
-        </div>
-        
-        <div style="background:#f8f9fa; padding:15px; border-radius:8px; margin-bottom:15px;">
-            <label style="display:block; font-size:14px; color:#666; margin-bottom:8px; font-weight:bold;">
-                הזן כמות סטנדרטית לסוג זה:
-            </label>
-            <input type="number" 
-                   id="f-estandar-tipo" 
-                   placeholder="לדוגמה: 1000" 
-                   value="${valorActual || ''}"
-                   style="width:100%; padding:14px; border:2px solid ${tituloColor}; border-radius:8px; font-size:20px; text-align:center;"
-                   onkeypress="if(event.key==='Enter') guardarEstandarTipo()">
-        </div>
-
-        <button class="btn-action" 
-                style="background:${tituloColor}; color:white; padding:18px; font-size:18px; font-weight:bold; border-radius:10px; margin-bottom:10px;" 
-                onclick="guardarEstandarTipo()">
-            <i class="fas fa-save"></i> 
-            ${valorActual ? 'עדכן סטנדרט' : 'שמור סטנדרט'}
-        </button>
-        
-        ${code ? `
-        <button class="btn-action" style="background:#6c757d; color:white; padding:12px;" onclick="cancelarSeleccionTipo()">
-            <i class="fas fa-times"></i> ביטול בחירה
-        </button>
-        ` : ''}
-    `;
-    
-    setTimeout(() => {
-        const input = document.getElementById('f-estandar-tipo');
-        if(input) input.focus();
-    }, 100);
-}
-
-function guardarEstandarTipo() {
-    const val = parseInt(document.getElementById('f-estandar-tipo').value);
-    if(!val || val <= 0) return alert("הזן כמות סטנדרטית תקינה");
-    
-    // Guardar estándar por tipo
-    app.estandaresPorTipo[tipoProductoSeleccionado] = val;
-    
-    // Si hay un código escaneado pendiente, continuar al registro
-    if(app.ultimoCodigo) {
-        mostrarFormularioRegistro(app.ultimoCodigo);
-    } else {
-        // Solo guardamos el estándar, cerramos el formulario
-        cerrarFormulario();
-        alert(`סטנדרט נשמר: ${tipoProductoSeleccionado} = ${fNum(val)} יח'`);
-    }
-}
-
-function cancelarSeleccionTipo() {
-    // Limpiar selección
-    document.querySelectorAll('.icon-option').forEach(opt => opt.classList.remove('selected'));
-    app.tipoSeleccionado = null;
-    
-    // Si venimos de escanear, cerrar todo
-    if(app.ultimoCodigo) {
-        cerrarEscaner();
-    }
-}
-
 // --- ESCANEO ---
 function activarEscaneo() {
-    // Resetear selección de tipo al abrir escáner
     app.tipoSeleccionado = null;
     app.ultimoCodigo = "";
     
@@ -166,18 +69,13 @@ function procesarCapturaManual() {
     mostrarFormulario(app.ultimoCodigo);
 }
 
+// --- FORMULARIO PRINCIPAL ---
 function mostrarFormulario(code) {
     document.getElementById('form-scanner').classList.remove('hidden');
     document.getElementById('txt-lote-det').innerText = "אצווה: " + code;
     
-    // Verificar si ya hay un tipo seleccionado con estándar configurado
-    if(app.tipoSeleccionado && app.estandaresPorTipo[app.tipoSeleccionado]) {
-        // Ya tenemos tipo y estándar, ir directo al registro
-        mostrarFormularioRegistro(code);
-    } else {
-        // Mostrar selector de tipos primero
-        mostrarSelectorTipos(code);
-    }
+    // Siempre mostrar selector de tipos primero
+    mostrarSelectorTipos(code);
 }
 
 function mostrarSelectorTipos(code) {
@@ -186,49 +84,151 @@ function mostrarSelectorTipos(code) {
     // Generar opciones de tipos con indicador de estándar configurado
     const opcionesHTML = TIPOS_PRODUCTO.map(tipo => {
         const tieneEstandar = app.estandaresPorTipo[tipo.value];
-        const indicador = tieneEstandar ? `<span style="color:#28a745; font-size:10px;">✓ ${fNum(tieneEstandar)}</span>` : '<span style="color:#999; font-size:10px;">חדש</span>';
-        const estaSeleccionado = tipoProductoSeleccionado === tipo.value ? 'selected' : '';
+        const indicador = tieneEstandar 
+            ? `<span style="color:#28a745; font-size:10px; font-weight:bold;">✓ ${fNum(tieneEstandar)}</span>` 
+            : '<span style="color:#dc3545; font-size:10px;">⚠ חסר</span>';
         
         return `
-            <div class="icon-option ${estaSeleccionado}" 
-                 onclick="selectIcon(this, '${tipo.id}', '${tipo.value}')"
-                 style="position:relative;">
+            <div class="icon-option" 
+                 onclick="seleccionarTipoRapido('${tipo.id}', '${tipo.value}', ${!!tieneEstandar})"
+                 style="position:relative; cursor:pointer;">
                 <i class="fas ${tipo.id}"></i>
-                <span>${tipo.nombre}</span>
+                <span style="font-size:11px;">${tipo.nombre}</span>
                 ${indicador}
             </div>
         `;
     }).join('');
     
     fields.innerHTML = `
-        <div style="background:#e7f3ff; padding:12px; border-radius:8px; margin-bottom:15px; text-align:center;">
+        <div style="background:#e7f3ff; padding:15px; border-radius:8px; margin-bottom:15px; text-align:center;">
             <span style="font-size:14px; color:#666;">בחר סוג מוצר:</span><br>
-            <b style="font-size:18px; color:var(--dark);">${code}</b>
+            <b style="font-size:20px; color:var(--dark); margin-top:5px; display:block;">${code}</b>
         </div>
         
-        <label style="display:block; font-size:12px; color:#666; margin-bottom:10px;">
-            💡 לחץ על סוג כדי לקבוע/לערוך את הכמות הסטנדרטית
+        <label style="display:block; font-size:12px; color:#666; margin-bottom:10px; text-align:center;">
+            💡 ירוק = סטנדרט מוגדר | אדום = נדרש הגדרה
         </label>
         
         <div class="icon-selector" style="margin-bottom:15px;">
             ${opcionesHTML}
         </div>
         
-        <button class="btn-action" style="background:#dc3545; color:white; padding:15px;" onclick="cancelarEscaneo()">
+        <button class="btn-action" style="background:#dc3545; color:white; padding:15px; font-size:16px;" onclick="cancelarEscaneo()">
             <i class="fas fa-times"></i> ביטול סריקה
         </button>
     `;
 }
 
+// 🆕 SELECCIÓN RÁPIDA: Si tiene estándar, va directo; si no, pide configurarlo
+function seleccionarTipoRapido(iconName, tipoNombre, tieneEstandar) {
+    iconoSeleccionado = iconName;
+    tipoProductoSeleccionado = tipoNombre;
+    app.tipoSeleccionado = tipoNombre;
+    
+    if (tieneEstandar) {
+        // Tiene estándar → Ir directo al registro
+        mostrarFormularioRegistro(app.ultimoCodigo);
+    } else {
+        // No tiene estándar → Pedir configuración
+        mostrarConfiguracionEstandar(tipoNombre, null);
+    }
+}
+
+// --- CONFIGURACIÓN DE ESTÁNDAR (solo cuando no existe o se edita desde totales) ---
+function mostrarConfiguracionEstandar(tipoNombre, valorActual, esDesdeTotales = false) {
+    const fields = document.getElementById('dynamic-fields');
+    const estaEditando = valorActual !== null && valorActual !== undefined;
+    const tituloColor = estaEditando ? '#fd7e14' : '#dc3545';
+    
+    fields.innerHTML = `
+        <div style="background:${estaEditando ? '#fff3cd' : '#f8d7da'}; padding:20px; border-radius:10px; margin-bottom:15px; text-align:center; border:3px solid ${tituloColor};">
+            <i class="fas ${iconoSeleccionado} fa-3x" style="margin-bottom:10px; color:${tituloColor};"></i><br>
+            <span style="font-size:18px; font-weight:bold; color:${tituloColor}; display:block; margin-bottom:5px;">
+                ${tipoNombre}
+            </span>
+            <span style="font-size:14px; color:#666;">
+                ${estaEditando ? 'עריכת כמות סטנדרטית' : 'הגדרת כמות סטנדרטית חדשה'}
+            </span>
+        </div>
+        
+        <div style="background:#f8f9fa; padding:20px; border-radius:8px; margin-bottom:15px;">
+            <label style="display:block; font-size:16px; color:#333; margin-bottom:10px; font-weight:bold;">
+                הזן כמות סטנדרטית:
+            </label>
+            <input type="number" 
+                   id="f-estandar-tipo" 
+                   placeholder="לדוגמה: 1000" 
+                   value="${valorActual || ''}"
+                   style="width:100%; padding:16px; border:3px solid ${tituloColor}; border-radius:8px; font-size:24px; text-align:center;"
+                   onkeypress="if(event.key==='Enter') guardarEstandarTipo(${esDesdeTotales})">
+        </div>
+
+        <button class="btn-action" 
+                style="background:${tituloColor}; color:white; padding:18px; font-size:18px; font-weight:bold; border-radius:10px; margin-bottom:10px;" 
+                onclick="guardarEstandarTipo(${esDesdeTotales})">
+            <i class="fas fa-save"></i> 
+            ${estaEditando ? 'עדכן סטנדרט' : 'שמור סטנדרט'}
+        </button>
+        
+        ${!esDesdeTotales ? `
+        <button class="btn-action" style="background:#6c757d; color:white; padding:15px;" onclick="volverASelectorTipos()">
+            <i class="fas fa-arrow-left"></i> חזרה לבחירת סוג
+        </button>
+        ` : `
+        <button class="btn-action" style="background:#6c757d; color:white; padding:15px;" onclick="cerrarFormulario(); actualizarLista();">
+            <i class="fas fa-times"></i> ביטול
+        </button>
+        `}
+    `;
+    
+    setTimeout(() => {
+        const input = document.getElementById('f-estandar-tipo');
+        if(input) {
+            input.focus();
+            input.select();
+        }
+    }, 100);
+}
+
+function guardarEstandarTipo(esDesdeTotales = false) {
+    const val = parseInt(document.getElementById('f-estandar-tipo').value);
+    if(!val || val <= 0) return alert("הזן כמות סטנדרטית תקינה (גדולה מ-0)");
+    
+    // Guardar estándar por tipo
+    app.estandaresPorTipo[tipoProductoSeleccionado] = val;
+    
+    if (esDesdeTotales) {
+        // Vino desde el botón de editar en totales → cerrar y actualizar lista
+        cerrarFormulario();
+        actualizarLista();
+        // Resetear selección
+        app.tipoSeleccionado = null;
+    } else {
+        // Vino desde escaneo → continuar al registro
+        mostrarFormularioRegistro(app.ultimoCodigo);
+    }
+}
+
+function volverASelectorTipos() {
+    mostrarSelectorTipos(app.ultimoCodigo);
+}
+
+function cancelarEscaneo() {
+    app.ultimoCodigo = "";
+    app.tipoSeleccionado = null;
+    cerrarEscaner();
+}
+
+// --- FORMULARIO DE REGISTRO ---
 function mostrarFormularioRegistro(code) {
     const fields = document.getElementById('dynamic-fields');
     const est = app.estandaresPorTipo[tipoProductoSeleccionado];
     
     fields.innerHTML = `
-        <div style="background:#e7f3ff; padding:15px; border-radius:8px; margin-bottom:15px; text-align:center;">
-            <i class="fas ${iconoSeleccionado} fa-2x" style="margin-bottom:8px;"></i><br>
-            <span style="font-size:16px; font-weight:bold;">${tipoProductoSeleccionado}</span><br>
-            <span style="font-size:14px; color:#666;">סטנדרט: <b style="font-size:20px; color:var(--s);">${fNum(est)}</b></span>
+        <div style="background:#d4edda; padding:15px; border-radius:8px; margin-bottom:15px; text-align:center; border:2px solid #28a745;">
+            <i class="fas ${iconoSeleccionado} fa-2x" style="margin-bottom:8px; color:#28a745;"></i><br>
+            <span style="font-size:16px; font-weight:bold; color:#155724;">${tipoProductoSeleccionado}</span><br>
+            <span style="font-size:14px; color:#155724;">סטנדרט: <b style="font-size:22px;">${fNum(est)}</b></span>
         </div>
         
         <div style="background:#f8f9fa; padding:15px; border-radius:8px; margin-bottom:15px; border:2px solid #e9ecef;">
@@ -241,7 +241,7 @@ function mostrarFormularioRegistro(code) {
                    style="width:100%; padding:14px; border:2px solid #ddd; border-radius:8px; font-size:18px; text-align:center; margin-bottom:10px;"
                    onkeypress="if(event.key==='Enter') procesarRegistro('${code}')">
             
-            <div style="font-size:12px; color:#28a745; text-align:center; margin-top:5px;" id="preview-accion">
+            <div style="font-size:13px; color:#28a745; text-align:center; margin-top:5px; font-weight:bold;" id="preview-accion">
                 יתווסף: +1 ארגז שלם (${est} יח')
             </div>
         </div>
@@ -254,7 +254,7 @@ function mostrarFormularioRegistro(code) {
         </button>
         
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-            <button class="btn-action" style="background:#6c757d; color:white; padding:12px; font-size:14px;" onclick="volverASeleccionTipo('${code}')">
+            <button class="btn-action" style="background:#6c757d; color:white; padding:12px; font-size:14px;" onclick="volverASelectorTipos()">
                 <i class="fas fa-arrow-left"></i> שנה סוג
             </button>
             <button class="btn-action" style="background:#dc3545; color:white; padding:12px; font-size:14px;" onclick="cancelarEscaneo()">
@@ -287,18 +287,6 @@ function mostrarFormularioRegistro(code) {
             });
         }
     }, 100);
-}
-
-function volverASeleccionTipo(code) {
-    // Volver a la pantalla de selección de tipo para cambiarlo o corregir estándar
-    app.ultimoCodigo = code;
-    mostrarSelectorTipos(code);
-}
-
-function cancelarEscaneo() {
-    app.ultimoCodigo = "";
-    app.tipoSeleccionado = null;
-    cerrarEscaner();
 }
 
 function procesarRegistro(code) {
@@ -341,7 +329,7 @@ function finalizarRegistro(code, cNominal, pNominal) {
     } else {
         app.lotes.unshift({
             id: code,
-            est: est,  // El estándar viene del tipo
+            est: est,
             com: cNominal,
             listaParciales: pNominal > 0 ? [pNominal] : [],
             tipo: tipoProductoSeleccionado,
@@ -355,9 +343,10 @@ function finalizarRegistro(code, cNominal, pNominal) {
     
     // Resetear para siguiente escaneo
     app.ultimoCodigo = "";
+    app.tipoSeleccionado = null;
 }
 
-// --- LISTA CON TOTALES POR TIPO ---
+// --- LISTA CON TOTALES POR TIPO Y BOTÓN DE EDITAR ---
 function actualizarLista() {
     const div = document.getElementById('container-lotes');
     if (app.lotes.length === 0) { 
@@ -384,22 +373,33 @@ function actualizarLista() {
         totalesPorTipo[l.tipo].unidades += totalUnidades;
     });
 
-    // Generar HTML de resumen por tipo
+    // Generar HTML de resumen por tipo con botón de editar estándar
     let resumenTiposHTML = '';
     const ordenTipos = ['ארגז', 'עלון', 'מדבקה', 'T.E', 'קרטון', 'חומר 1', 'חומר 2', 'חומר 3'];
     
     ordenTipos.forEach(tipo => {
         if (totalesPorTipo[tipo]) {
             const t = totalesPorTipo[tipo];
+            // Encontrar el icono del tipo
+            const tipoInfo = TIPOS_PRODUCTO.find(tp => tp.value === tipo);
+            const iconoTipo = tipoInfo ? tipoInfo.id : 'fa-box';
+            
             resumenTiposHTML += `
-                <div style="display:flex; align-items:center; gap:8px; padding:10px 12px; background:#f8f9fa; border-radius:6px; border-left:3px solid var(--s);">
-                    <i class="fas ${t.icon}" style="color:var(--s);"></i>
+                <div style="display:flex; align-items:center; gap:8px; padding:12px; background:#f8f9fa; border-radius:8px; border-left:4px solid var(--s); margin-bottom:8px;">
+                    <i class="fas ${t.icon}" style="color:var(--s); font-size:18px;"></i>
                     <div style="flex:1;">
-                        <div style="font-size:13px; font-weight:bold;">${tipo}</div>
-                        <div style="font-size:11px; color:#666;">סטנדרט: ${fNum(t.estandar)}</div>
+                        <div style="font-size:14px; font-weight:bold;">${tipo}</div>
+                        <div style="font-size:12px; color:#666; display:flex; align-items:center; gap:5px;">
+                            סטנדרט: <b>${fNum(t.estandar)}</b>
+                            <button onclick="editarEstandarDesdeTotales('${tipo}', '${iconoTipo}')" 
+                                    style="background:#fd7e14; color:white; border:none; border-radius:4px; padding:2px 8px; font-size:11px; cursor:pointer; margin-right:5px;"
+                                    title="ערוך סטנדרט">
+                                <i class="fas fa-edit"></i> ערוך
+                            </button>
+                        </div>
                     </div>
                     <div style="text-align:right;">
-                        <div style="font-weight:bold; color:var(--dark);">${fNum(t.unidades)} יח'</div>
+                        <div style="font-weight:bold; color:var(--dark); font-size:16px;">${fNum(t.unidades)} יח'</div>
                         <div style="font-size:11px; color:#666;">${t.cantidadCajas} פריטים</div>
                     </div>
                 </div>
@@ -453,21 +453,38 @@ function actualizarLista() {
 
     div.innerHTML = `
         <div style="margin-bottom:15px; background:white; padding:15px; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.1);">
-            <h4 style="margin:0 0 12px 0; color:var(--dark); font-size:14px; border-bottom:2px solid var(--s); padding-bottom:8px;">
-                📊 סיכום לפי סוג (Resumen por tipo)
+            <h4 style="margin:0 0 12px 0; color:var(--dark); font-size:16px; border-bottom:2px solid var(--s); padding-bottom:8px; display:flex; align-items:center; gap:8px;">
+                <i class="fas fa-chart-pie"></i> סיכום לפי סוג
             </h4>
-            <div style="display:grid; grid-template-columns:1fr; gap:8px;">
+            <div style="margin-bottom:10px;">
                 ${resumenTiposHTML}
             </div>
-            <div style="margin-top:12px; padding-top:12px; border-top:2px solid #e9ecef; display:flex; justify-content:space-between; align-items:center;">
-                <span style="font-weight:bold; color:var(--dark);">סה"כ כללי:</span>
-                <span style="font-size:18px; font-weight:800; color:var(--s);">
+            <div style="margin-top:12px; padding-top:12px; border-top:2px solid #e9ecef; display:flex; justify-content:space-between; align-items:center; background:#e7f3ff; padding:10px; border-radius:6px;">
+                <span style="font-weight:bold; color:var(--dark); font-size:14px;">סה"כ כללי:</span>
+                <span style="font-size:20px; font-weight:800; color:var(--s);">
                     ${Object.values(totalesPorTipo).reduce((a, b) => a + b.unidades, 0).toLocaleString()} יח'
                 </span>
             </div>
         </div>
         ${lotesHTML}
     `;
+}
+
+// 🆕 NUEVA FUNCIÓN: Editar estándar desde la sección de totales
+function editarEstandarDesdeTotales(tipoNombre, iconoTipo) {
+    const valorActual = app.estandaresPorTipo[tipoNombre];
+    
+    // Configurar variables globales
+    tipoProductoSeleccionado = tipoNombre;
+    iconoSeleccionado = iconoTipo;
+    app.tipoSeleccionado = tipoNombre;
+    
+    // Abrir el overlay del scanner para usar el mismo formulario
+    document.getElementById('overlay-scanner').classList.remove('hidden');
+    document.getElementById('txt-lote-det').innerText = "עריכת סטנדרט: " + tipoNombre;
+    
+    // Mostrar configuración de estándar
+    mostrarConfiguracionEstandar(tipoNombre, valorActual, true);
 }
 
 // --- FUNCIONES AUXILIARES ---
@@ -496,16 +513,19 @@ function cerrarFormulario() {
 }
 
 function cerrarEscaner() {
-    Quagga.stop();
+    try {
+        Quagga.stop();
+    } catch(e) {}
     document.getElementById('overlay-scanner').classList.add('hidden');
     document.getElementById('form-scanner').classList.add('hidden');
+    app.ultimoCodigo = "";
+    app.tipoSeleccionado = null;
 }
 
 function descargarCSV() {
     if (app.lotes.length === 0) return alert("No hay datos");
     const idPedido = document.getElementById('txt-pedido').innerText || "SIN_ID";
     
-    // Calcular totales por tipo
     const totalesPorTipo = {};
     app.lotes.forEach(l => {
         const sumaParciales = l.listaParciales.reduce((a, b) => a + b, 0);
@@ -521,7 +541,6 @@ function descargarCSV() {
     csv += "Pedido: " + idPedido + "\n";
     csv += "Fecha: " + new Date().toLocaleString() + "\n\n";
     
-    // Resumen por tipo
     csv += "RESUMEN POR TIPO:\n";
     csv += "Tipo,Estandar,Total Unidades\n";
     for (const [tipo, data] of Object.entries(totalesPorTipo)) {
@@ -529,7 +548,6 @@ function descargarCSV() {
     }
     csv += "\n";
     
-    // Detalle por lote
     csv += "DETALLE POR LOTE:\n";
     csv += "Lote,Tipo,Estandar,Cajas Completas,Parciales (lista),Total Parciales,Total Unidades\n";
     
