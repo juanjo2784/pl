@@ -15,7 +15,6 @@
 </head>
 <body>
 
-    <!-- PANTALLA INTRO -->
     <div id="screen-intro" style="padding: 20px; text-align: center; margin-top: 15vh;">
         <div style="background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
             <i class="fas fa-boxes fa-3x" style="color:var(--s); margin-bottom:15px;"></i>
@@ -26,16 +25,9 @@
         </div>
     </div>
 
-    <!-- PANTALLA PRINCIPAL -->
     <div id="screen-main" class="hidden">
         <div class="header-pedido">הזמנה: <span id="txt-pedido"></span></div>
-        
-        <!-- CONTENEDOR CON SCROLL -->
-        <div class="main-content">
-            <div class="list-container" id="container-lotes"></div>
-        </div>
-        
-        <!-- FOOTER FIJO -->
+        <div class="list-container" id="container-lotes"></div>
         <div class="nav-footer">
             <button class="icon-btn" style="background:var(--d);" onclick="location.reload()"><i class="fas fa-sync-alt"></i></button>
             <button class="icon-btn" style="background:var(--p); transform: scale(1.1);" onclick="activarEscaneo()"><i class="fas fa-camera"></i></button>
@@ -43,39 +35,28 @@
         </div>
     </div>
 
-    <!-- OVERLAY ESCANER -->
     <div id="overlay-scanner" class="hidden">
-        <!-- Área de cámara con altura limitada (angosta) -->
-        <div class="scanner-camera-area">
-            <div id="interactive">
-                <div class="scanner-viewfinder">
-                    <div class="laser-line"></div>
-                </div>
-            </div>
-            
-            <!-- Botón de confirmar -->
+        <div id="interactive">
+            <div class="scanner-viewfinder"><div class="laser-line"></div></div>
             <button id="btn-confirm-capture" class="btn-capture-trigger hidden" onclick="procesarCapturaManual()">
                 <i class="fas fa-check"></i> סריקת אצווה
             </button>
-            
-            <!-- Botón volver -->
-            <button onclick="cerrarEscaner()" class="btn-back">
+            <button onclick="cerrarEscaner()" style="position:absolute; top:20px; left:20px; color:white; background:rgba(0,0,0,0.5); border:none; border-radius:50%; width:40px; height:40px; z-index:20;">
                 <i class="fas fa-arrow-left"></i>
             </button>
-            
-            <!-- Zoom -->
-            <div class="zoom-control">
-                <i class="fas fa-search-minus"></i>
-                <input type="range" id="zoom-range" min="1" max="3" step="0.1" value="1" oninput="aplicarZoom(this.value)">
-                <i class="fas fa-search-plus"></i>
-            </div>
+
+        <div style="position:absolute; bottom:120px; left:50%; transform:translateX(-50%); width:70%; z-index:25; display:flex; align-items:center; gap:10px; background:rgba(0,0,0,0.5); padding:5px 15px; border-radius:20px;">
+            <i class="fas fa-search-minus" style="color:white;"></i>
+            <input type="range" id="zoom-range" min="1" max="3" step="0.1" value="1" oninput="aplicarZoom(this.value)" style="flex:1;">
+            <i class="fas fa-search-plus" style="color:white;"></i>
+        </div>
+
         </div>
         
-        <!-- Formulario popup desde abajo -->
         <div id="form-scanner" class="form-pop hidden">
-            <h3 id="txt-lote-det">זוהתה אצווה</h3>
-            <div id="dynamic-fields"></div>
-            <button class="btn-action btn-cancel" onclick="cerrarEscaner()">מבטל</button>
+            <h3 id="txt-lote-det" style="margin:0; color:var(--s);">זוהתה אצווה</h3>
+            <div id="dynamic-fields" style="margin-top:10px;"></div>
+            <button class="btn-action" style="background:var(--d); margin-top:15px;" onclick="cerrarEscaner()">מבטל</button>
         </div>
     </div>
 </body>
