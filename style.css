@@ -213,7 +213,7 @@ html, body {
     left: 50%;
     transform: translate(-50%, -50%);
     width: 80%; /* Ancho del área de lectura */
-    height: 80px; /* ALTURA DELGADA - ajusta según necesites */
+    height: 30px; /* ALTURA DELGADA - ajusta según necesites */
     border: 2px dashed rgba(255, 255, 255, 0.8);
     box-shadow: 
         0 0 0 9999px rgba(0, 0, 0, 0.7), /* Oscurece el área exterior */
