@@ -368,7 +368,6 @@ function actualizarLista() {
         lotesPorTipo[l.tipo].lotes.push(l);
     });
 
-    // Orden de tipos
     const ordenTipos = ['ארגז', 'עלון', 'מדבקה', 'T.E', 'קרטון', 'חומר 1', 'חומר 2', 'חומר 3'];
     
     let html = '';
@@ -387,7 +386,6 @@ function actualizarLista() {
             totalTipoUnidades += (l.com * l.est) + sumaParciales;
         });
 
-        // Encabezado del tipo
         html += `
             <div class="tipo-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px; border-radius: 12px; margin-bottom: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -414,12 +412,12 @@ function actualizarLista() {
         `;
 
         // Lotos de este tipo
-        tipoData.lotes.forEach((l, idxGlobal) => {
-            // Encontrar índice real en app.lotes para las funciones
+        tipoData.lotes.forEach((l) => {
             const idxReal = app.lotes.findIndex(item => item === l);
             const sumaParciales = l.listaParciales.reduce((a, b) => a + b, 0);
             const totalUnid = (l.com * l.est) + sumaParciales;
-            const totalCajas = l.com + (l.listaParciales.length > 0 ? 1 : 0);
+            // 🆕 CORRECCIÓN: Contar cajas completas + cada parcial como 1 caja
+            const totalCajas = l.com + l.listaParciales.length;
 
             html += `
                 <div class="lote-card" style="background: white; border-radius: 10px; margin-bottom: 12px; 
@@ -494,11 +492,26 @@ function actualizarLista() {
                 </div>
             `;
         });
-
-        html += `</div>`; // Cierre de tipo-lotes
+    // Calcular total general
+    const totalGeneral = app.lotes.reduce((sum, l) => {
+        const parciales = l.listaParciales.reduce((a, b) => a + b, 0);
+        return sum + (l.com * l.est) + parciales;
+    }, 0);
+    
+    // 🆕 Actualizar barra fija de total
+    const totalBar = document.getElementById('total-general-valor');
+    if(totalBar) {
+        totalBar.textContent = fNum(totalGeneral) + " יח'";
+    }
+    // Quitar el total del HTML interno (ya está fuera)
+    html += `
+        <div style="height: 80px;"></div>
+    `;
+    
+    div.innerHTML = html;
     });
 
-    // Total general al final
+    // Total general - 🆕 MOVIDO FUERA DEL CONTENEDOR SCROLL O CON MARGEN SUFICIENTE
     const totalGeneral = app.lotes.reduce((sum, l) => {
         const parciales = l.listaParciales.reduce((a, b) => a + b, 0);
         return sum + (l.com * l.est) + parciales;
@@ -506,12 +519,10 @@ function actualizarLista() {
 
     html += `
         <div style="background: #2d3748; color: white; padding: 20px; border-radius: 12px; 
-                    margin-top: 20px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+                    margin: 20px 0 100px 0; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
             <div style="font-size: 14px; opacity: 0.8; margin-bottom: 5px;">סה"כ כללי בהזמנה</div>
             <div style="font-size: 32px; font-weight: bold; color: #48bb78;">${fNum(totalGeneral)} יח'</div>
         </div>
-        
-        <div style="height: 20px;"></div>
     `;
 
     div.innerHTML = html;
