@@ -207,12 +207,27 @@ body {
 
 /* LA CLAVE: El contenedor de la lista crece para llenar el vacío */
 .list-container {
-    flex: 1;
+/* ========== LISTA CON SCROLL - CORREGIDO ========== */
+
+.list-container { 
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
     overflow-y: auto;
-    padding: 10px;
-    background-color: #f8fafc;
     -webkit-overflow-scrolling: touch;
-    /* ELIMINAR: max-height, position: fixed, etc. */
+    padding: 10px;
+    /* 🆕 AUMENTADO: Espacio para footer + total general */
+    padding-bottom: 120px;
+    background-color: #f8fafc;
+}
+
+.list-container::after {
+    content: "";
+    display: block;
+    height: 50px;
+}
 }
 /* El footer se mantiene siempre abajo sin moverse */
 .nav-footer {
