@@ -231,3 +231,69 @@ body {
 #screen-main:not(.hidden) {
     display: flex !important;
 }
+
+/* ========== ESTILOS PARA AGRUPACIÓN POR TIPO ========== */
+
+.tipo-header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    backdrop-filter: blur(10px);
+}
+
+.tipo-lotes {
+    animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Mejoras visuales para los lotes */
+.lote-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.lote-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+/* Input de cajas con animación al cambiar */
+input[type="number"]:focus {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 3px rgba(56, 161, 105, 0.2);
+}
+
+/* Parciales con indicador visual */
+.lote-card > div:nth-child(4) {
+    border-left: 3px solid #ed8936;
+    margin-left: 15px;
+}
+
+/* Responsive para pantallas pequeñas */
+@media (max-width: 380px) {
+    .tipo-header {
+        padding: 12px;
+    }
+    
+    .tipo-header > div > div:first-child {
+        font-size: 14px;
+    }
+    
+    .lote-card > div:first-child {
+        padding: 10px;
+    }
+    
+    input[type="number"] {
+        width: 60px;
+        padding: 8px;
+    }
+}

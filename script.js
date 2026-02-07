@@ -354,120 +354,167 @@ function actualizarLista() {
         return; 
     }
 
-    // Calcular totales por tipo
-    const totalesPorTipo = {};
+    // Agrupar lotes por tipo
+    const lotesPorTipo = {};
     
     app.lotes.forEach(l => {
-        const sumaParciales = l.listaParciales.reduce((a, b) => a + b, 0);
-        const totalUnidades = (l.com * l.est) + sumaParciales;
-        
-        if (!totalesPorTipo[l.tipo]) {
-            totalesPorTipo[l.tipo] = {
-                cantidadCajas: 0,
-                unidades: 0,
-                icon: l.icon,
-                estandar: l.est
+        if (!lotesPorTipo[l.tipo]) {
+            lotesPorTipo[l.tipo] = {
+                lotes: [],
+                estandar: l.est,
+                icon: l.icon
             };
         }
-        totalesPorTipo[l.tipo].cantidadCajas += l.com + l.listaParciales.length;
-        totalesPorTipo[l.tipo].unidades += totalUnidades;
+        lotesPorTipo[l.tipo].lotes.push(l);
     });
 
-    // Generar HTML de resumen por tipo con botón de editar estándar
-    let resumenTiposHTML = '';
+    // Orden de tipos
     const ordenTipos = ['ארגז', 'עלון', 'מדבקה', 'T.E', 'קרטון', 'חומר 1', 'חומר 2', 'חומר 3'];
     
+    let html = '';
+
     ordenTipos.forEach(tipo => {
-        if (totalesPorTipo[tipo]) {
-            const t = totalesPorTipo[tipo];
-            // Encontrar el icono del tipo
-            const tipoInfo = TIPOS_PRODUCTO.find(tp => tp.value === tipo);
-            const iconoTipo = tipoInfo ? tipoInfo.id : 'fa-box';
-            
-            resumenTiposHTML += `
-                <div style="display:flex; align-items:center; gap:8px; padding:12px; background:#f8f9fa; border-radius:8px; border-left:4px solid var(--s); margin-bottom:8px;">
-                    <i class="fas ${t.icon}" style="color:var(--s); font-size:18px;"></i>
-                    <div style="flex:1;">
-                        <div style="font-size:14px; font-weight:bold;">${tipo}</div>
-                        <div style="font-size:12px; color:#666; display:flex; align-items:center; gap:5px;">
-                            סטנדרט: <b>${fNum(t.estandar)}</b>
-                            <button onclick="editarEstandarDesdeTotales('${tipo}', '${iconoTipo}')" 
-                                    style="background:#fd7e14; color:white; border:none; border-radius:4px; padding:2px 8px; font-size:11px; cursor:pointer; margin-right:5px;"
-                                    title="ערוך סטנדרט">
-                                <i class="fas fa-edit"></i> ערוך
-                            </button>
+        if (!lotesPorTipo[tipo]) return;
+        
+        const tipoData = lotesPorTipo[tipo];
+        const tipoInfo = TIPOS_PRODUCTO.find(tp => tp.value === tipo);
+        const iconoTipo = tipoInfo ? tipoInfo.id : 'fa-box';
+        
+        // Calcular total del tipo
+        let totalTipoUnidades = 0;
+        tipoData.lotes.forEach(l => {
+            const sumaParciales = l.listaParciales.reduce((a, b) => a + b, 0);
+            totalTipoUnidades += (l.com * l.est) + sumaParciales;
+        });
+
+        // Encabezado del tipo
+        html += `
+            <div class="tipo-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px; border-radius: 12px; margin-bottom: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <i class="fas ${iconoTipo} fa-lg"></i>
+                        <div>
+                            <div style="font-size: 18px; font-weight: bold;">${tipo}</div>
+                            <div style="font-size: 13px; opacity: 0.9;">סטנדרט: ${fNum(tipoData.estandar)} יח'/יח'</div>
                         </div>
                     </div>
-                    <div style="text-align:right;">
-                        <div style="font-weight:bold; color:var(--dark); font-size:16px;">${fNum(t.unidades)} יח'</div>
-                        <div style="font-size:11px; color:#666;">${t.cantidadCajas} פריטים</div>
+                    <div style="text-align: right;">
+                        <div style="font-size: 22px; font-weight: bold;">${fNum(totalTipoUnidades)} יח'</div>
+                        <button onclick="editarEstandarDesdeTotales('${tipo}', '${iconoTipo}')" 
+                                style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.5); 
+                                       color: white; padding: 5px 12px; border-radius: 15px; font-size: 12px; 
+                                       cursor: pointer; margin-top: 5px;">
+                            <i class="fas fa-edit"></i> ערוך סטנדרט
+                        </button>
                     </div>
                 </div>
-            `;
-        }
-    });
+            </div>
+            
+            <div class="tipo-lotes" style="margin-bottom: 20px; padding: 0 5px;">
+        `;
 
-    // Generar lista de lotes
-    let lotesHTML = "";
-    app.lotes.forEach((l, idxLote) => {
-        const sumaParciales = l.listaParciales.reduce((a, b) => a + b, 0);
-        const totalUnid = (l.com * l.est) + sumaParciales;
+        // Lotos de este tipo
+        tipoData.lotes.forEach((l, idxGlobal) => {
+            // Encontrar índice real en app.lotes para las funciones
+            const idxReal = app.lotes.findIndex(item => item === l);
+            const sumaParciales = l.listaParciales.reduce((a, b) => a + b, 0);
+            const totalUnid = (l.com * l.est) + sumaParciales;
+            const totalCajas = l.com + (l.listaParciales.length > 0 ? 1 : 0);
 
-        lotesHTML += `
-            <div class="lote-card" style="background:white; margin-bottom:10px; border-radius:8px; border:1px solid #ddd; overflow:hidden;">
-                <div style="background:#2d2d2d; color:white; padding:10px; display:flex; justify-content:space-between; align-items:center;">
-                    <span>
-                        <i class="fas ${l.icon}" style="margin-right:5px; color:#aaa;"></i>
-                        <b>${l.id}</b> 
-                        <small style="opacity:0.8;">(${l.tipo} | Est: ${fNum(l.est)})</small>
-                    </span>
-                    <i class="fas fa-trash" onclick="eliminarLote(${idxLote})" style="color:#f87171; cursor:pointer;"></i>
-                </div>
-
-                <div style="padding:10px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                        <span style="font-size:14px;"><i class="fas fa-box" style="color:#d97706"></i> ארגזים מלאים:</span>
-                        <input type="number" value="${l.com}" 
-                               onchange="editCajas(${idxLote}, this.value)"
-                               style="width:60px; border:1px solid #10b981; border-radius:5px; text-align:center; font-weight:bold; padding:5px;">
+            html += `
+                <div class="lote-card" style="background: white; border-radius: 10px; margin-bottom: 12px; 
+                                              box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden; 
+                                              border-left: 4px solid var(--s);">
+                    
+                    <!-- Línea 1: Número de lote -->
+                    <div style="background: #f8f9fa; padding: 12px 15px; border-bottom: 1px solid #e9ecef; 
+                                display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 16px; font-weight: bold; color: #2d3748;">
+                            <i class="fas fa-barcode" style="color: var(--s); margin-left: 8px;"></i>
+                            ${l.id}
+                        </span>
+                        <button onclick="eliminarLote(${idxReal})" 
+                                style="background: #fee; color: #e53e3e; border: none; padding: 8px 12px; 
+                                       border-radius: 6px; cursor: pointer; font-size: 13px;">
+                            <i class="fas fa-trash"></i> מחק
+                        </button>
                     </div>
-
-                    ${l.listaParciales.map((p, idxPar) => `
-                        <div style="background:#fff7ed; border-top:1px dashed #fdba74; padding:6px 10px; display:flex; justify-content:space-between; font-size:13px;">
-                            <span><i class="fas fa-box-open" style="color:#f59e0b"></i> Caja parcial:</span>
-                            <span style="font-weight:bold;">
-                                ${fNum(p)} Unid. 
-                                <i class="fas fa-times" onclick="eliminarParcial(${idxLote}, ${idxPar})" style="color:red; margin-left:8px; cursor:pointer;"></i>
+                    
+                    <!-- Línea 2: Total unidades y total cajas -->
+                    <div style="padding: 12px 15px; background: white; 
+                                display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <span style="font-size: 13px; color: #666;">סה"כ יחידות:</span>
+                            <span style="font-size: 20px; font-weight: bold; color: #28a745; margin-right: 5px;">
+                                ${fNum(totalUnid)}
                             </span>
                         </div>
-                    `).join('')}
-
-                    <div style="border-top:1px solid #eee; margin-top:5px; padding-top:8px; display:flex; justify-content:space-between; align-items:center;">
-                        <span style="color:#666; font-weight:bold;">סה"כ יחידות:</span>
-                        <span style="font-size:20px; color:#10b981; font-weight:800;">${fNum(totalUnid)}</span>
+                        <div style="background: #e6fffa; padding: 6px 12px; border-radius: 15px;">
+                            <span style="font-size: 13px; color: #319795;">
+                                <i class="fas fa-boxes"></i> ${totalCajas} ארגזים
+                            </span>
+                        </div>
                     </div>
+                    
+                    <!-- Línea 3: Cajas completas (editable) -->
+                    <div style="padding: 12px 15px; border-top: 1px dashed #e2e8f0; 
+                                display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 14px; color: #4a5568; min-width: 100px;">
+                            <i class="fas fa-box" style="color: #d69e2e;"></i> ארגזים שלמים:
+                        </span>
+                        <input type="number" 
+                               value="${l.com}" 
+                               onchange="editCajas(${idxReal}, this.value)"
+                               style="width: 80px; padding: 10px; border: 2px solid #38a169; 
+                                      border-radius: 8px; text-align: center; font-size: 16px; 
+                                      font-weight: bold; color: #2d3748;">
+                        <span style="font-size: 12px; color: #999;">× ${fNum(l.est)} = ${fNum(l.com * l.est)} יח'</span>
+                    </div>
+                    
+                    <!-- Líneas 4+: Cajas parciales -->
+                    ${l.listaParciales.map((p, idxPar) => `
+                        <div style="padding: 10px 15px; border-top: 1px solid #f7fafc; 
+                                    background: #fffaf0; display: flex; justify-content: space-between; 
+                                    align-items: center;">
+                            <span style="font-size: 13px; color: #c05621;">
+                                <i class="fas fa-box-open" style="margin-left: 5px;"></i>
+                                קופסה חלקית:
+                            </span>
+                            <div>
+                                <span style="font-weight: bold; color: #c05621;">${fNum(p)} יחידות</span>
+                                <button onclick="eliminarParcial(${idxReal}, ${idxPar})" 
+                                        style="background: none; border: none; color: #e53e3e; 
+                                               margin-right: 10px; cursor: pointer; font-size: 14px;">
+                                    <i class="fas fa-times-circle"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `).join('')}
+                    
                 </div>
-            </div>
-        `;
+            `;
+        });
+
+        html += `</div>`; // Cierre de tipo-lotes
     });
 
-    div.innerHTML = `
-        <div style="margin-bottom:15px; background:white; padding:15px; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.1);">
-            <h4 style="margin:0 0 12px 0; color:var(--dark); font-size:16px; border-bottom:2px solid var(--s); padding-bottom:8px; display:flex; align-items:center; gap:8px;">
-                <i class="fas fa-chart-pie"></i> סיכום לפי סוג
-            </h4>
-            <div style="margin-bottom:10px;">
-                ${resumenTiposHTML}
-            </div>
-            <div style="margin-top:12px; padding-top:12px; border-top:2px solid #e9ecef; display:flex; justify-content:space-between; align-items:center; background:#e7f3ff; padding:10px; border-radius:6px;">
-                <span style="font-weight:bold; color:var(--dark); font-size:14px;">סה"כ כללי:</span>
-                <span style="font-size:20px; font-weight:800; color:var(--s);">
-                    ${Object.values(totalesPorTipo).reduce((a, b) => a + b.unidades, 0).toLocaleString()} יח'
-                </span>
-            </div>
+    // Total general al final
+    const totalGeneral = app.lotes.reduce((sum, l) => {
+        const parciales = l.listaParciales.reduce((a, b) => a + b, 0);
+        return sum + (l.com * l.est) + parciales;
+    }, 0);
+
+    html += `
+        <div style="background: #2d3748; color: white; padding: 20px; border-radius: 12px; 
+                    margin-top: 20px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+            <div style="font-size: 14px; opacity: 0.8; margin-bottom: 5px;">סה"כ כללי בהזמנה</div>
+            <div style="font-size: 32px; font-weight: bold; color: #48bb78;">${fNum(totalGeneral)} יח'</div>
         </div>
-        ${lotesHTML}
+        
+        <div style="height: 20px;"></div>
     `;
+
+    div.innerHTML = html;
 }
 
 // 🆕 NUEVA FUNCIÓN: Editar estándar desde la sección de totales
@@ -489,22 +536,38 @@ function editarEstandarDesdeTotales(tipoNombre, iconoTipo) {
 
 // --- FUNCIONES AUXILIARES ---
 function editCajas(idx, val) {
-    app.lotes[idx].com = parseInt(val) || 0;
+    const nuevaCantidad = parseInt(val) || 0;
+    if (nuevaCantidad < 0) return;
+    
+    app.lotes[idx].com = nuevaCantidad;
     actualizarLista();
 }
 
 function eliminarParcial(idxLote, idxPar) {
-    if(confirm("¿Eliminar esta caja parcial?")) {
+    if(confirm("האם למחוק קופסה חלקית זו?")) {
         app.lotes[idxLote].listaParciales.splice(idxPar, 1);
         actualizarLista();
     }
 }
 
 function eliminarLote(idx) {
-    if(confirm("¿Eliminar TODO el lote?")) {
+    if(confirm("האם למחוק את כל האצווה?")) {
         app.lotes.splice(idx, 1);
         actualizarLista();
     }
+}
+
+function editarEstandarDesdeTotales(tipoNombre, iconoTipo) {
+    const valorActual = app.estandaresPorTipo[tipoNombre];
+    
+    tipoProductoSeleccionado = tipoNombre;
+    iconoSeleccionado = iconoTipo;
+    app.tipoSeleccionado = tipoNombre;
+    
+    document.getElementById('overlay-scanner').classList.remove('hidden');
+    document.getElementById('txt-lote-det').innerText = "עריכת סטנדרט: " + tipoNombre;
+    
+    mostrarConfiguracionEstandar(tipoNombre, valorActual, true);
 }
 
 function cerrarFormulario() {
@@ -549,7 +612,7 @@ function descargarCSV() {
     csv += "\n";
     
     csv += "DETALLE POR LOTE:\n";
-    csv += "Lote,Tipo,Estandar,Cajas Completas,Parciales (lista),Total Parciales,Total Unidades\n";
+    csv += "Lote,Tipo,Estandar,Cajas Completas,Parciales o(lista),Total Parciales,Total Unidades\n";
     
     app.lotes.forEach(l => {
         const sumaParciales = l.listaParciales.reduce((a, b) => a + b, 0);
