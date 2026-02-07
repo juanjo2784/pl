@@ -49,7 +49,13 @@ function activarEscaneo() {
             constraints: { width: { min: 1280 }, height: { min: 720 }, facingMode: "environment" },
             area: { top: "46%", right: "8%", left: "8%", bottom: "46%" }
         },
-        decoder: { readers: ["code_128_reader", "ean_reader"] }
+        decoder: { 
+            readers: ["code_128_reader", "ean_reader", "ean_8_reader"],
+            multiple: false  /* ← Solo leer un código a la vez */
+        },
+        locate: true,
+        numOfWorkers: 4,
+        frequency: 10  /* ← Más intentos de lectura por segundo */
     }, (err) => { 
         if (err) return alert("Error de cámara");
         Quagga.start(); 
