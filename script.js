@@ -47,7 +47,7 @@ function activarEscaneo() {
             type: "LiveStream",
             target: document.querySelector('#interactive'),
             constraints: { width: { min: 1280 }, height: { min: 720 }, facingMode: "environment" },
-            area: { top: "48%", right: "10%", left: "10%", bottom: "48%" }
+            area: { top: "47%", right: "8%", left: "8%", bottom: "47%" }
         },
         decoder: { readers: ["code_128_reader", "ean_reader"] }
     }, (err) => { 
