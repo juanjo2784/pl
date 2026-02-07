@@ -45,36 +45,43 @@
     </div>
 
     <!-- OVERLAY ESCANER -->
- <div id="overlay-scanner" class="hidden">
-    <!-- Área de cámara -->
-    <div class="scanner-camera-area">
-        <div id="interactive">
-            <div class="scanner-viewfinder">
-                <div class="laser-line"></div>
+    <div id="overlay-scanner" class="hidden">
+        <!-- Contenedor de la cámara -->
+        <div id="camera-container">
+            <!-- Aquí Quagga inyecta el video -->
+            <div id="interactive"></div>
+            
+            <!-- Mira del escáner - POSICIONADA ENCIMA del video -->
+            <div id="scanner-overlay">
+                <div class="scanner-frame">
+                    <div class="laser-line"></div>
+                </div>
+            </div>
+            
+            <!-- Botón confirmar -->
+            <button id="btn-confirm-capture" class="btn-capture-trigger hidden" onclick="procesarCapturaManual()">
+                <i class="fas fa-check"></i> אישור אצווה
+            </button>
+            
+            <!-- Botón volver -->
+            <button onclick="cerrarEscaner()" class="btn-back">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+            
+            <!-- Zoom -->
+            <div class="zoom-control">
+                <i class="fas fa-search-minus"></i>
+                <input type="range" id="zoom-range" min="1" max="3" step="0.1" value="1" oninput="aplicarZoom(this.value)">
+                <i class="fas fa-search-plus"></i>
             </div>
         </div>
         
-        <button id="btn-confirm-capture" class="btn-capture-trigger hidden" onclick="procesarCapturaManual()">
-            <i class="fas fa-check"></i> סריקת אצווה
-        </button>
-        
-        <button onclick="cerrarEscaner()" class="btn-back">
-            <i class="fas fa-arrow-left"></i>
-        </button>
-        
-        <div class="zoom-control">
-            <i class="fas fa-search-minus"></i>
-            <input type="range" id="zoom-range" min="1" max="3" step="0.1" value="1" oninput="aplicarZoom(this.value)">
-            <i class="fas fa-search-plus"></i>
+        <!-- Formulario popup -->
+        <div id="form-scanner" class="form-pop hidden">
+            <h3 id="txt-lote-det">זוהתה אצווה</h3>
+            <div id="dynamic-fields"></div>
+            <button class="btn-action" style="background:var(--d);" onclick="cerrarEscaner()">מבטל</button>
         </div>
     </div>
-    
-    <!-- Formulario popup -->
-    <div id="form-scanner" class="form-pop hidden">
-        <h3 id="txt-lote-det">זוהתה אצווה</h3>
-        <div id="dynamic-fields"></div>
-        <button class="btn-action" style="background:var(--d);" onclick="cerrarEscaner()">מבטל</button>
-    </div>
-</div>
 </body>
 </html>
